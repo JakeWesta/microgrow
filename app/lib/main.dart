@@ -1,122 +1,176 @@
 import 'package:flutter/material.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'mqtt_service.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'MicroGrow Data',
+      home: MqttHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MqttHomePage extends StatefulWidget {
+  const MqttHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MqttHomePage> createState() => _MqttHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MqttHomePageState extends State<MqttHomePage> {
+  MqttClient? _client;
+  String _status = 'Disconnected';
+  String _topic = 'microgrow/esp32_data';
+  String _message = '';
+  final List<String> _receivedMessages = [];
+  final TextEditingController _msgController = TextEditingController();
 
-  void _incrementCounter() {
+  // Connect on startup
+  @override
+  void initState() {
+    super.initState();
+    _connectMqtt();
+  }
+
+  Future<void> _connectMqtt() async {
+    setState(() => _status = 'Connecting...');
+    try {
+      final client = await connect();
+      client.subscribe(_topic, MqttQos.atLeastOnce);
+      client.updates?.listen((List<MqttReceivedMessage<MqttMessage?>>? c) {
+        if (c == null || c.isEmpty) return;
+        final recMessage = c[0].payload as MqttPublishMessage;
+        final payload = MqttPublishPayload.bytesToStringAsString(
+          recMessage.payload.message,
+        );
+        setState(() {
+          _message = payload;
+          _receivedMessages.insert(0, '[$_topic] $payload');
+        });
+        print('Received message: "$payload" from topic: ${c[0].topic}');
+      });
+      setState(() {
+        _client = client;
+        _status = 'Connected';
+      });
+    } catch (e) {
+      print('MQTT connection failed: $e');
+      setState(() => _status = 'Failed to connect');
+    }
+  }
+
+  void _sendMessage() {
+    if (_client == null ||
+        _client!.connectionStatus?.state != MqttConnectionState.connected) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Not connected')));
+      return;
+    }
+
+    final builder = MqttClientPayloadBuilder()..addString(_msgController.text);
+    _client!.publishMessage(_topic, MqttQos.atLeastOnce, builder.payload!);
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _receivedMessages.insert(0, '[You] ${_msgController.text}');
+      _msgController.clear();
     });
   }
 
   @override
+  void dispose() {
+    _client?.disconnect();
+    _msgController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text(
+          'MicroGrow',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 40,
+          ),
+        ),
+        backgroundColor: Colors.green,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _status == 'Connected' ? Icons.check_circle : Icons.error,
+                  color: _status == 'Connected' ? Colors.green : Colors.red,
+                ),
+                const SizedBox(width: 8),
+                Text('Status: $_status'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _msgController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Send message',
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _sendMessage,
+                    icon: const Icon(Icons.send),
+                    label: const Text('Publish'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _connectMqtt,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reconnect'),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 30),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Received Data:',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16.0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _receivedMessages.isEmpty
+                  ? const Text('No data received yet')
+                  : ListView.builder(
+                      itemCount: _receivedMessages.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          leading: const Icon(Icons.message),
+                          title: Text(_receivedMessages[index]),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
