@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../models/app_state.dart';
 import '../models/habitat_obj.dart';
 import 'package:uuid/uuid.dart';
+import '../mqtt/mqtt_service.dart';
+
 
 class AddHabitatScreen extends StatefulWidget {
   const AddHabitatScreen({super.key});
@@ -90,17 +92,28 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                       backgroundColor: Colors.green[700],
                       padding: const EdgeInsets.all(20)
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       if (formKey.currentState!.validate()) {
                         final id = const Uuid().v4();
                         final newHabitat = Habitat(
-                          id: id,
+                          id: "a",
                           name: nameController.text.trim(),
                           greenType: selectedGreen!,
                         );
 
                         context.read<MyAppState>().addHabitat(newHabitat);
                         
+                        try {
+                          await MqttService.setupHabitat(
+                            habitatId: "a",
+                            greenType: newHabitat.greenType,
+                            schedule: 12, 
+                          );
+                          print("MQTT setupHabitat sent successfully");
+                        } catch (e) {
+                          print("MQTT setupHabitat failed: $e");
+                        }
+
                         Navigator.pop(context);
                       }
                     },
