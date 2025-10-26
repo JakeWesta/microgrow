@@ -63,6 +63,22 @@ class MqttService {
     client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
   }
 
-  
+  static Future<void> sensorSubscribe({required String habitatId, required void Function(String payload) onMessage}) async {
+    final client = await connect();
+    final topic = 'microgrow/$habitatId/sensor';
+
+    client.subscribe(topic, MqttQos.atLeastOnce);
+
+     client.updates?.listen(
+      (List<MqttReceivedMessage<MqttMessage?>>? event) {
+          if (event == null || event.isEmpty) return;
+          final recMessage = event[0].payload as MqttPublishMessage;
+          final payload = MqttPublishPayload.bytesToStringAsString(recMessage.payload.message);
+          onMessage(payload);
+          }
+      );
+  }
+
+
 }
 
