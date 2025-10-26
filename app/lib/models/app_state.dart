@@ -1,18 +1,20 @@
-import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
-class Habitat{
-  final String name;
-  final String greenType;
-  final String id;
+part 'app_state.g.dart';
 
-  Habitat({required this.id, required this.name, required this.greenType});
-}
+@HiveType(typeId: 0)
+class Habitat extends HiveObject {
+  @HiveField(0)
+  String id;
 
-class MyAppState extends ChangeNotifier {
-  List<Habitat> habitats = [];
+  @HiveField(1)
+  String name;
 
-  void addHabitat(Habitat h) {
-    habitats.add(h);
-    notifyListeners();
-  }
+  @HiveField(2)
+  String greenType;
+
+  @HiveField(3)
+  int? lastSensorValue;
+
+  Habitat({required this.id, required this.name, required this.greenType, this.lastSensorValue, });
 }
