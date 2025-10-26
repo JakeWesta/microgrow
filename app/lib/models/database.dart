@@ -1,5 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import 'app_state.dart';
+import 'habitat_obj.dart';
 
 class Database {
 

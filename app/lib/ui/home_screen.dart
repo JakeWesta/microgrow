@@ -1,3 +1,4 @@
+import 'package:app/ui/sensor_data_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
@@ -17,7 +18,7 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.green[700],
         title: Row(
           children: [
-            Icon(Icons.eco, size: 32, color: Colors.white), // microgreen/leaf icon
+            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
             const SizedBox(width: 10),
             const Text(
               'Micro-Grow',
@@ -58,15 +59,13 @@ class HomeScreen extends StatelessWidget {
                     trailing: IconButton(
                       icon: const Icon(Icons.water_damage_outlined),
                       onPressed: () {
-                        //current sensor data screen
                         print("woof");
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (_) =>
-                                
-                        //   ),
-                        // );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SensorDataScreen(habitat: habitats.first)
+                          ),
+                        );
                       },
                     ),
                   ),
