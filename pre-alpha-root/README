@@ -1,8 +1,0 @@
-If using ARDUINO IDE, make sure of the following:
-1. Navigate to: File>Preferences>Additional boards manager URLs
-    Enter the link: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-2. In the main drop-down (teal tab) select the board: DOIT ESP32 DEVKIT V1
-3. Library manager, on the left vertical tab, search: "PubSubClient" by Nick O'Leary. 
-    Install.
-4. Restart
-5. Change SSID and PASSWORD environment variables as needed, lines 9, 10.
