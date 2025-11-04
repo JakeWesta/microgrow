@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/habitat_obj.dart';
-import '../mqtt/mqtt_service.dart'; 
+import '../mqtt/mqtt_connect.dart';
 
 class SensorDataScreen extends StatefulWidget {
   final Habitat habitat;
@@ -12,7 +12,7 @@ class SensorDataScreen extends StatefulWidget {
 }
 
 class _SensorDataScreenState extends State<SensorDataScreen> {
-  int? sensorVal;
+  String? sensorVal;
 
   @override
   void initState() {
@@ -21,7 +21,7 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
     MqttService.sensorSubscribe(
       habitatId: widget.habitat.id,
       onMessage: (payload) {
-        final int? sensorValue = int.tryParse(payload);
+        final String? sensorValue = payload;
         if (sensorValue != null && mounted) {
           setState(() {
             sensorVal = sensorValue;
