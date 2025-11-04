@@ -9,7 +9,6 @@ import 'package:typed_data/typed_data.dart';
 class MqttService {
   static const host = 'broker.emqx.io';
   static const port = 1883;
-  static const path = '/mqtt';
   static MqttServerClient? client;
   
   

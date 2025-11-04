@@ -96,7 +96,7 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                       if (formKey.currentState!.validate()) {
                         final id = const Uuid().v4();
                         final newHabitat = Habitat(
-                          id: "a",
+                          id: id,
                           name: nameController.text.trim(),
                           greenType: selectedGreen!,
                           waterSchedule: greenOptions[selectedGreen]
@@ -106,7 +106,7 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                         
                         try {
                           await MqttService.setupHabitat(
-                            habitatId: "a",
+                            habitatId: id,
                             greenType: newHabitat.greenType,
                             schedule: greenOptions[selectedGreen]!, 
                           );
