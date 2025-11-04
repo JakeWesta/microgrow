@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
 import 'add_habitat_screen.dart';
+import 'package:hive/hive.dart';
 
 
 class HomeScreen extends StatelessWidget {
@@ -40,7 +41,6 @@ class HomeScreen extends StatelessWidget {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  print("meow");
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -51,25 +51,48 @@ class HomeScreen extends StatelessWidget {
                 child: const Text('Add a Habitat'),
               ),
               const SizedBox(height:15),
+
+              if (habitats.isEmpty) 
+                const Center(child: Text(
+                  'No current habitats formed.\n Press "Add a Habitat" to begin!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 134, 245, 153))
+                ),
+              ),
+
               if (habitats.isNotEmpty)
-                Card(
-                  child: ListTile(
-                    title: Text(habitats.first.name),
-                    subtitle: Text('Type: ${habitats.first.greenType}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.water_damage_outlined),
-                      onPressed: () {
-                        print("woof");
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SensorDataScreen(habitat: habitats.first)
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: habitats.length,
+                    itemBuilder: (context, index) {
+                      final habitat = habitats[index];
+                      return Card(
+                          child: ListTile(
+                            title: Text(habitat.name),
+                            subtitle: Text('Type: ${habitat.greenType}'),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.water_damage_outlined),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => SensorDataScreen(habitat: habitat)
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         );
-                      },
-                    ),
+                    },
                   ),
                 ),
+
+            ElevatedButton(
+                onPressed: () async {
+                  await Hive.deleteFromDisk();
+                },
+                child: const Text("DEBUG CLEAR"), 
+              ),
             ],
           ),
         ),
@@ -77,3 +100,5 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+          

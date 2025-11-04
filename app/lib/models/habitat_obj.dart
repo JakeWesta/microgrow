@@ -14,7 +14,10 @@ class Habitat extends HiveObject {
   String greenType;
 
   @HiveField(3)
+  int? waterSchedule;
+
+  @HiveField(4)
   int? lastSensorValue;
 
-  Habitat({required this.id, required this.name, required this.greenType, this.lastSensorValue, });
+  Habitat({required this.id, required this.name, required this.greenType, this.waterSchedule, this.lastSensorValue});
 }

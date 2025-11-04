@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/app_state.dart';
 import '../models/habitat_obj.dart';
 import 'package:uuid/uuid.dart';
-import '../mqtt/mqtt_service.dart';
+import '../mqtt/mqtt_connect.dart';
 
 
 class AddHabitatScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
   final nameController = TextEditingController();
   String? selectedGreen;
 
-  final List<String> greenOptions = ['Basil', 'Broccoli'];
+  final Map<String, int> greenOptions = {'Basil': 8, 'Broccoli': 10};
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +65,7 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   initialValue: selectedGreen,
-                  items: greenOptions.map((type) => DropdownMenuItem(
+                  items: greenOptions.keys.map((type) => DropdownMenuItem(
                             value: type,
                             child: Text(type),
                           )).toList(),
@@ -96,18 +96,19 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                       if (formKey.currentState!.validate()) {
                         final id = const Uuid().v4();
                         final newHabitat = Habitat(
-                          id: "a",
+                          id: id,
                           name: nameController.text.trim(),
                           greenType: selectedGreen!,
+                          waterSchedule: greenOptions[selectedGreen]
                         );
 
                         context.read<MyAppState>().addHabitat(newHabitat);
                         
                         try {
                           await MqttService.setupHabitat(
-                            habitatId: "a",
+                            habitatId: id,
                             greenType: newHabitat.greenType,
-                            schedule: 12, 
+                            schedule: greenOptions[selectedGreen]!, 
                           );
                           print("MQTT setupHabitat sent successfully");
                         } catch (e) {
