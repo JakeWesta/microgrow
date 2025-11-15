@@ -60,20 +60,51 @@ class MqttService {
     client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
   }
 
-  static Future<void> sensorSubscribe({required String habitatId, required void Function(String payload) onMessage}) async {
+  static Future<void> deleteHabitat({required String habitatId}) async {
     final client = await connect();
-    final topic = 'microgrow/$habitatId/sensor';
+    final topic = 'microgrow/$habitatId/delete';
 
-    client.subscribe(topic, MqttQos.atLeastOnce);
+    final msg = jsonEncode({
+      'delete': 0
+    });
 
-     client.updates?.listen(
+    client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
+  }
+
+  static Future<void> actuatorPublish({required String habitatId,  required String actuatorName, required int val}) async {
+    final client = await connect();
+    final topic = "microgrow/$habitatId/${actuatorName}_control";
+
+    final msg = jsonEncode({
+      'val': val
+    });
+
+    client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
+  }
+
+  static Future<void> sensorSubscribe({required String habitatId, required void Function(String topic, String payload) onMessage}) async {
+    final client = await connect();
+    final topics = ['microgrow/$habitatId/light', 'microgrow/$habitatId/humidity', 'microgrow/$habitatId/temp', 'microgrow/$habitatId/water'];
+
+    for (final t in topics) {
+      client.subscribe(t, MqttQos.atLeastOnce);
+    }
+
+    client.updates?.listen(
       (List<MqttReceivedMessage<MqttMessage?>>? event) {
-          if (event == null || event.isEmpty) return;
-          final recMessage = event[0].payload as MqttPublishMessage;
-          final payload = MqttPublishPayload.bytesToStringAsString(recMessage.payload.message);
-          onMessage(payload);
-          }
-      );
+        if (event == null || event.isEmpty) return;
+
+        final rec = event[0];
+        final message = rec.payload as MqttPublishMessage;
+        final payload = MqttPublishPayload.bytesToStringAsString(
+          message.payload.message,
+        );
+
+        final topic = rec.topic; 
+
+        onMessage(topic, payload);
+      },
+    );
   }
 
 

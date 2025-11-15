@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../models/app_state.dart';
 import 'add_habitat_screen.dart';
 import '../models/habitat_obj.dart';
-import 'package:hive/hive.dart';
+import 'manual_control_screen.dart';
+import '../mqtt/mqtt_connect.dart';
+
 
 void showDeleteConfirm(BuildContext context, Habitat habitat) {
   showDialog(
@@ -103,6 +105,19 @@ class HomeScreen extends StatelessWidget {
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                // MANUAL BUTTON
+                                IconButton(
+                                  icon: const Icon(Icons.water_damage_outlined),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ManualControlScreen(habitat: habitat),
+                                      ),
+                                    );
+                                  },
+                                ),
+
                                 // SENSOR BUTTON
                                 IconButton(
                                   icon: const Icon(Icons.water_damage_outlined),
@@ -118,9 +133,12 @@ class HomeScreen extends StatelessWidget {
 
                                 // DELETE BUTTON
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete),
                                   onPressed: () {
                                     showDeleteConfirm(context, habitat);
+                                    MqttService.deleteHabitat(
+                                      habitatId: habitat.id
+                                    );
                                   },
                                 ),
                               ],

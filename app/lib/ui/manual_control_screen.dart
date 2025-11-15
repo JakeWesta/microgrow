@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import '../models/habitat_obj.dart';
 import '../mqtt/mqtt_connect.dart';
 
-class SensorDataScreen extends StatefulWidget {
+class ManualControlScreen extends StatefulWidget {
   final Habitat habitat;
 
-  const SensorDataScreen({super.key, required this.habitat});
+  const ManualControlScreen({super.key, required this.habitat});
 
   @override
-  State<SensorDataScreen> createState() => _SensorDataScreenState();
+  State<ManualControlScreen> createState() => _ManualControlScreen();
 }
 
-class _SensorDataScreenState extends State<SensorDataScreen> {
+class _ManualControlScreen extends State<ManualControlScreen> {
   String? light;
   String? humidity;
   String? temp;
