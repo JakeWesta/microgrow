@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'habitat_obj.dart';
 import 'database.dart';
 
@@ -18,10 +17,11 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-    void deleteHabitat(Habitat habitat) async {
+  void deleteHabitat(Habitat habitat) async {
     await Database.box.delete(habitat.id);
     habitats = Database.box.values.toList();
     notifyListeners();
   }
+
 
 }

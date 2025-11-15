@@ -2,6 +2,7 @@ import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'dart:convert';
 import 'package:typed_data/typed_data.dart';
+import '../ui/add_habitat_screen.dart';
 
 // TODO: Implement class to support MQTT connection and 
 // subcribing to topics 
@@ -48,16 +49,37 @@ class MqttService {
 
   }
 
-  static Future<void> setupHabitat({required String habitatId, required String greenType, required int schedule}) async {
+  static Future<void> setupHabitat({
+    required String habitatId,
+    required HabitatConfig config,
+  }) async {
     final client = await connect();
     final topic = 'microgrow/init';
 
     final msg = jsonEncode({
-      'id': habitatId,
-      'green': greenType,
-      'schedule': schedule
+      "id": habitatId,
+      "greenType": config.greenType,
+      "target": {
+        "temp": config.tempTarget,
+        "humidity": config.humidityTarget,
+      },
+      "light": {
+        "startTimeMs": config.lightStartMs,
+        "durationMs": config.lightDurationMs,
+        "intervalMs": config.lightIntervalMs,
+      },
+      "water": {
+        "startTimeMs": config.waterStartMs,
+        "durationMs": config.waterDurationMs,
+        "intervalMs": config.waterIntervalMs,
+      }
     });
-    client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
+
+    client.publishMessage(
+      topic,
+      MqttQos.atLeastOnce,
+      Uint8Buffer()..addAll(utf8.encode(msg)),
+    );
   }
 
   static Future<void> deleteHabitat({required String habitatId}) async {

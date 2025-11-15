@@ -13,11 +13,44 @@ class Habitat extends HiveObject {
   @HiveField(2)
   String greenType;
 
+  // Targets
   @HiveField(3)
-  int? waterSchedule;
+  int tempTarget;
 
   @HiveField(4)
-  int? lastSensorValue;
+  int humidityTarget;
 
-  Habitat({required this.id, required this.name, required this.greenType, this.waterSchedule, this.lastSensorValue});
+  // Light Schedule
+  @HiveField(5)
+  int lightStartMs;
+
+  @HiveField(6)
+  int lightDurationMs;
+
+  @HiveField(7)
+  int lightIntervalMs;
+
+  // Water Schedule
+  @HiveField(8)
+  int waterStartMs;
+
+  @HiveField(9)
+  int waterDurationMs;
+
+  @HiveField(10)
+  int waterIntervalMs;
+
+  Habitat({
+    required this.id,
+    required this.name,
+    required this.greenType,
+    required this.tempTarget,
+    required this.humidityTarget,
+    required this.lightStartMs,
+    required this.lightDurationMs,
+    required this.lightIntervalMs,
+    required this.waterStartMs,
+    required this.waterDurationMs,
+    required this.waterIntervalMs
+  });
 }

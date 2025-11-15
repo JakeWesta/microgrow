@@ -14,5 +14,5 @@ class Database {
   static Future<void> saveHabitat(Habitat habitat) async {
     await box.put(habitat.id, habitat);
   }
-
+  
 }

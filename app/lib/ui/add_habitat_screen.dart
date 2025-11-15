@@ -6,6 +6,50 @@ import 'package:uuid/uuid.dart';
 import '../mqtt/mqtt_connect.dart';
 import 'package:intl/intl.dart';
 
+class HabitatConfig {
+  final String greenType;
+
+  final int tempTarget;
+  final int humidityTarget;
+
+  final int lightStartMs;
+  final int lightDurationMs;
+  final int lightIntervalMs;
+
+  final int waterStartMs;
+  final int waterDurationMs;
+  final int waterIntervalMs;
+
+  const HabitatConfig({
+    required this.greenType,
+    required this.tempTarget,
+    required this.humidityTarget,
+    required this.lightStartMs,
+    required this.lightDurationMs,
+    required this.lightIntervalMs,
+    required this.waterStartMs,
+    required this.waterDurationMs,
+    required this.waterIntervalMs,
+  });
+
+  Map<String, dynamic> toJson() => {
+    "greenType": greenType,
+    "target": {
+      "temp": tempTarget,
+      "humidity": humidityTarget,
+    },
+    "light": {
+      "startTimeMs": lightStartMs,
+      "durationMs": lightDurationMs,
+      "intervalMs": lightIntervalMs,
+    },
+    "water": {
+      "startTimeMs": waterStartMs,
+      "durationMs": waterDurationMs,
+      "intervalMs": waterIntervalMs,
+    }
+  };
+}
 
 
 class AddHabitatScreen extends StatefulWidget {
@@ -22,19 +66,42 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
 
   final now = DateTime.now();
 
-
-
-
   @override
   Widget build(BuildContext context) {
 
-      final msSinceMidnight =
-      now.hour * 3600000 +
-      now.minute * 60000 +
-      now.second * 1000 +
-      now.millisecond;
+    final now = DateTime.now();
+    final msSinceMidnight =
+        now.hour * 3600000 +
+        now.minute * 60000 +
+        now.second * 1000 +
+        now.millisecond;
 
-    final Map<String, int> greenOptions = {'Basil': msSinceMidnight, 'Broccoli': msSinceMidnight};
+    final Map<String, HabitatConfig> greenOptions = {
+      'Basil': HabitatConfig(
+        greenType: 'Basil',
+        tempTarget: 24,
+        humidityTarget: 60,
+        lightStartMs: msSinceMidnight,
+        lightDurationMs: 3600000,  
+        lightIntervalMs: 86400000, 
+        waterStartMs: msSinceMidnight,
+        waterDurationMs: 30000,    
+        waterIntervalMs: 28800000, 
+      ),
+
+      'Broccoli': HabitatConfig(
+        greenType: 'Broccoli',
+        tempTarget: 22,
+        humidityTarget: 55,
+        lightStartMs: msSinceMidnight,
+        lightDurationMs: 5400000, 
+        lightIntervalMs: 86400000,
+        waterStartMs: msSinceMidnight,
+        waterDurationMs: 45000, 
+        waterIntervalMs: 21600000,
+      ),
+    };
+
 
     return Scaffold(
       appBar: AppBar(
@@ -109,20 +176,29 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                     onPressed: () async {
                       if (formKey.currentState!.validate()) {
                         final id = const Uuid().v4();
+                        final config = greenOptions[selectedGreen]!;
+
                         final newHabitat = Habitat(
                           id: id,
                           name: nameController.text.trim(),
-                          greenType: selectedGreen!,
-                          waterSchedule: greenOptions[selectedGreen]
+                          greenType: config.greenType,
+                          tempTarget: config.tempTarget,
+                          humidityTarget: config.humidityTarget,
+                          lightStartMs: config.lightStartMs,
+                          lightDurationMs: config.lightDurationMs,
+                          lightIntervalMs: config.lightIntervalMs,
+                          waterStartMs: config.waterStartMs,
+                          waterDurationMs: config.waterDurationMs,
+                          waterIntervalMs: config.waterIntervalMs,
                         );
 
                         context.read<MyAppState>().addHabitat(newHabitat);
                         
                         try {
+                          final config = greenOptions[selectedGreen]!;
                           await MqttService.setupHabitat(
                             habitatId: id,
-                            greenType: newHabitat.greenType,
-                            schedule: greenOptions[selectedGreen]!, 
+                            config: config,
                           );
                           print("MQTT setupHabitat sent successfully");
                         } catch (e) {
