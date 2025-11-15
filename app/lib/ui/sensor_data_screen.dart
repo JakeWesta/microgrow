@@ -41,9 +41,29 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  Widget sensorCard(String label, String? value) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              value ?? 'No data',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -53,11 +73,11 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
         backgroundColor: Colors.green[700],
         title: Row(
           children: [
-            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
+            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)),
             const SizedBox(width: 10),
             Text(
-              ('${widget.habitat.name} Sensors'),
-              style: TextStyle(
+              '${widget.habitat.name} Sensors',
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -67,50 +87,16 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
         ),
         centerTitle: false,
       ),
-      
-      body: SafeArea(
-        child: Center(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Sensor Readings',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
-
-                  sensorTile('Light', light),
-                  sensorTile('Humidity', humidity),
-                  sensorTile('Temperature', temp),
-                  sensorTile('Water Level', water),
-                ],
-              ),
-            ),
-          ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            sensorCard('Light', light),
+            sensorCard('Humidity', humidity),
+            sensorCard('Temperature', temp),
+            sensorCard('Water Level', water),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget sensorTile(String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 18)),
-          Text(
-            value ?? 'No data',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
-          ),
-        ],
       ),
     );
   }
