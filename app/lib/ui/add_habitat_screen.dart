@@ -170,8 +170,9 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[700],
-                      padding: const EdgeInsets.all(20)
+                      minimumSize: const Size(220, 80), 
+                      padding: const EdgeInsets.all(16),
+                      backgroundColor: Color.fromARGB(255, 82, 175, 88)
                     ),
                     onPressed: () async {
                       if (formKey.currentState!.validate()) {
@@ -209,8 +210,13 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                       }
                     },
                     child: const Text(
-                      "Save Habitat",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      'Add a Habitat',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color:  Color.fromARGB(255, 255, 255, 255),
+                        fontFamily: "Times"
+                      ),
                     ),
                   ),
                 ),

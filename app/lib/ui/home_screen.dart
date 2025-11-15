@@ -44,7 +44,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green[700],
+        backgroundColor: const Color.from(alpha: 1, red: 0.22, green: 0.557, blue: 0.235),
         title: Row(
           children: [
             Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
@@ -72,13 +72,19 @@ class HomeScreen extends StatelessWidget {
                 const Center(child: Text(
                   'No current habitats formed.\n Press "Add a Habitat" to begin!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 32, color: Color.fromARGB(255, 134, 245, 153))
+                  style: TextStyle(fontSize: 32, color: Color.fromARGB(255, 82, 175, 88), fontFamily: "Times", fontWeight: FontWeight.bold)
                 ),
-              ),
+              ), 
 
-              const SizedBox(height:30),
+              if (habitats.isEmpty) 
+                const SizedBox(height:30),
 
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(220, 80), 
+                  padding: const EdgeInsets.all(16),
+                  backgroundColor: Color.fromARGB(255, 82, 175, 88)
+                ),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -87,7 +93,15 @@ class HomeScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('Add a Habitat'),
+                child: const Text(
+                  'Add a Habitat',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color:  Color.fromARGB(255, 255, 255, 255),
+                    fontFamily: "Times"
+                  ),
+                ),
               ),
 
               const SizedBox(height:15),
