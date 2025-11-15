@@ -51,8 +51,23 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.green[700],
-        title: Text('${widget.habitat.name} Sensors'),
+        title: Row(
+          children: [
+            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
+            const SizedBox(width: 10),
+            Text(
+              ('${widget.habitat.name} Sensors'),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
       ),
+      
       body: SafeArea(
         child: Center(
           child: Card(

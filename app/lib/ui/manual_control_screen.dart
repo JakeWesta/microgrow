@@ -8,94 +8,123 @@ class ManualControlScreen extends StatefulWidget {
   const ManualControlScreen({super.key, required this.habitat});
 
   @override
-  State<ManualControlScreen> createState() => _ManualControlScreen();
+  State<ManualControlScreen> createState() => _ManualControlScreenState();
 }
 
-class _ManualControlScreen extends State<ManualControlScreen> {
-  String? light;
-  String? humidity;
-  String? temp;
-  String? water;
+class _ManualControlScreenState extends State<ManualControlScreen> {
+  bool lightOn = false;
+  bool fanOn = false;
+  bool waterFlashing = false;
 
-  @override
-  void initState() {
-    super.initState();
+  Future<void> sendOverride(String actuator, int val) async {
+    try {
+      await MqttService.actuatorPublish(
+        habitatId: widget.habitat.id,
+        actuatorName: actuator,
+        val: val,
+      );
+      if (actuator.toLowerCase() == 'water') {
+        setState(() => waterFlashing = true);
+        await Future.delayed(const Duration(milliseconds: 1000));
+        if (mounted) setState(() => waterFlashing = false);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to override $actuator: $e')),
+      );
+    }
+  }
 
-    MqttService.sensorSubscribe(
-      habitatId: widget.habitat.id,
-      onMessage: (topic, payload) {
-        if (!mounted) return;
-
-        setState(() {
-          if (topic.endsWith('/light')) {
-            light = payload;
-          } else if (topic.endsWith('/humidity')) {
-            humidity = payload;
-          } else if (topic.endsWith('/temp')) {
-            temp = payload;
-          } else if (topic.endsWith('/water')) {
-            water = payload;
-          }
-        });
-      },
+  Widget toggleCard(String label, bool value, void Function(bool) onChanged) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Switch(
+              value: value,
+              activeThumbColor : const Color.fromARGB(255, 81, 162, 85),
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+Widget waterCard() {
+  return Card(
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.symmetric(vertical: 8),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Water',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: waterFlashing ? const Color.fromARGB(255, 134, 233, 139) : const Color.fromARGB(255, 86, 171, 90),
+            ),
+            onPressed: () => sendOverride('water', 1),
+            child: const Text(
+              'Pulse',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 255, 255, 255)),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.green[700],
-        title: Text('${widget.habitat.name} Sensors'),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Sensor Readings',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
-
-                  sensorTile('Light', light),
-                  sensorTile('Humidity', humidity),
-                  sensorTile('Temperature', temp),
-                  sensorTile('Water Level', water),
-                ],
+        title: Row(
+          children: [
+            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
+            const SizedBox(width: 10),
+            Text(
+              ('${widget.habitat.name} Override'),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-          ),
+          ],
         ),
+        centerTitle: false,
       ),
-    );
-  }
-
-  Widget sensorTile(String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
         children: [
-          Text(label, style: const TextStyle(fontSize: 18)),
-          Text(
-            value ?? 'No data',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
-          ),
+          const SizedBox(height: 16),
+          waterCard(),
+          toggleCard('Light', lightOn, (val) {
+            setState(() => lightOn = val);
+            sendOverride('light', val ? 1 : 0);
+          }),
+          toggleCard('Fan', fanOn, (val) {
+            setState(() => fanOn = val);
+            sendOverride('fan', val ? 1 : 0);
+          }),
         ],
+      ),
       ),
     );
   }

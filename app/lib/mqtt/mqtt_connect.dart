@@ -95,10 +95,13 @@ class MqttService {
 
   static Future<void> actuatorPublish({required String habitatId,  required String actuatorName, required int val}) async {
     final client = await connect();
-    final topic = "microgrow/$habitatId/${actuatorName}_control";
+    final topic = "microgrow/$habitatId/override";
+
+    final Map<String, int> options = {"water": 0, "light": 1, "fan": 2};
 
     final msg = jsonEncode({
-      'val': val
+      'actuator': options[actuatorName],
+      'enable': val
     });
 
     client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));

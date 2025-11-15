@@ -72,11 +72,11 @@ class HomeScreen extends StatelessWidget {
                 const Center(child: Text(
                   'No current habitats formed.\n Press "Add a Habitat" to begin!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 134, 245, 153))
+                  style: TextStyle(fontSize: 32, color: Color.fromARGB(255, 134, 245, 153))
                 ),
               ),
 
-              const SizedBox(height:15),
+              const SizedBox(height:30),
 
               ElevatedButton(
                 onPressed: () {
@@ -107,7 +107,7 @@ class HomeScreen extends StatelessWidget {
                               children: [
                                 // MANUAL BUTTON
                                 IconButton(
-                                  icon: const Icon(Icons.water_damage_outlined),
+                                  icon: const Icon(Icons.play_arrow_sharp),
                                   onPressed: () {
                                     Navigator.push(
                                       context,
