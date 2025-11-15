@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import 'ui/home_screen.dart';
 import 'models/app_state.dart';
 import 'models/database.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '/models/habitat_obj.dart';
+import 'ui/main_nav_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +26,7 @@ class MicroGrowApp extends StatelessWidget {
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 15, 156, 10)),
         ),
-        home: HomeScreen(),
+        home: HomePage(),
       ),
     );
   }

@@ -50,7 +50,7 @@ class HomeScreen extends StatelessWidget {
             Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
             const SizedBox(width: 10),
             const Text(
-              'Micro-Grow',
+              'Habitat Home',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
