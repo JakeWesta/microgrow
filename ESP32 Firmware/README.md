@@ -1,4 +1,4 @@
-##To run the ESP32 firmware:
+# To run the ESP32 firmware:
 
 1. Install the open-source Arduino IDE
 2. Follow the tutorial for the IDE to recognize the board: https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/
