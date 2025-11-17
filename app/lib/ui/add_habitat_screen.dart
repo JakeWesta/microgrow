@@ -4,7 +4,6 @@ import '../models/app_state.dart';
 import '../models/habitat_obj.dart';
 import 'package:uuid/uuid.dart';
 import '../mqtt/mqtt_connect.dart';
-import 'package:intl/intl.dart';
 
 class HabitatConfig {
   final String greenType;

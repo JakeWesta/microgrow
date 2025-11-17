@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'ui/home_screen.dart';
 import 'models/app_state.dart';
 import 'models/database.dart';
 import 'ui/main_nav_screen.dart';
