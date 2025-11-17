@@ -1,5 +1,7 @@
 # Micro-Grow
 
+- Flutter app demo video: https://www.youtube.com/watch?v=zIg6AqKC-sg
+
 ## Implemented Features:
 ### Pre-Alpha Build:
 - **MQTT Connection** - Set up two-way communication between the ESP32 and the mobile app by using the MQTT protocol and EMQX broker.
@@ -33,10 +35,12 @@
 1. Ensure the required software is installed and install the necessary dependencies
 2. Launch the mobile application:
    - Open VS Code and clone the repository
+   - If prompted on VS Code, install the Flutter SDK and add to path if missing.
+   - Install Flutter and Dart VS Code exstentions
    - Navigate to the app directory with `cd microgrow/app`
    - Fetch packages with `flutter pub get`
    - Connect to a 2.4 GHz WiFi network, such as a mobile hotspot
-   - Start the application with `flutter run` and specify the launch platform
+   - Start the application with `flutter run -d windows`
 3. Flash the ESP32 firmware:
    - Open `main.ino` from the `ESP32 Firmware` directory in the Arduino IDE
    - Connect the ESP32 to a USB port on your computer
@@ -59,3 +63,4 @@
 - If there is a disconnect from MQTT, we don't test for reconnection.
 - Sometimes the ESP32 flashing will fail if its GPIO pins are connected to external peripherals/sensors. Remove the ESP32 from the breadboard before flashing to resolve this.
 - Pump and fan will sometimes stop working during regular use.
+- The current setup for the init sequence sends a JSON that is too large for the ESP32 to parse. This means that light scheduling is currently not being sent, as it had to be trimmed for the JSON to fit.
