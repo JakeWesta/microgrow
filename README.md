@@ -28,7 +28,7 @@
 - Hive (for database)
 - EMQX MQTT broker
 
-### Setup:
+### To setup the mobile application:
 1. Ensure the required software is installed and install the necessary dependencies
 2. Launch the mobile application:
    - Open VS Code and clone the repository
@@ -44,6 +44,25 @@
      - Port: auto-detected when plugging in
 4. At the top of the code, assign the corresponding network information to the variables `ssid` and `password`
 5. Press Upload and wait for flashing to complete
+
+# To run the ESP32 firmware:
+
+1. Install the open-source Arduino IDE
+2. Follow the tutorial for the IDE to recognize the board: https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/
+3. Install the following packages. Easiest way is to go to the library manager tab on the left and search:
+	
+	**PubSubClient** by Nick O'Leary
+	
+	**DHT20** by Rob Tilaart
+	
+	**ArduinoJson** by Benoit Blanchon
+	
+	**Adafruit GFX Library** by Adafruit
+	
+	**Adafruit ST7735 and ST7789 Library** by Adafruit
+	
+	**FastLED** by Daniel Garcia
+4. Upload the firmware
 
 ## Known Bugs:
 - If sensor is unplugged, it displays garbage values. We don't handle that issue, as it displays more than 7 digits when disconnected from ESP32.
