@@ -44,14 +44,14 @@
      - Board: ESP32 Dev Module
      - Port: auto-detected when plugging in
 4. You may need to install the following packages. Easiest way is to go to the library manager tab on the left and search:
-	**PubSubClient** by Nick O'Leary
-	**DHT20** by Rob Tilaart
-	**ArduinoJson** by Benoit Blanchon
-	**Adafruit GFX Library** by Adafruit
-	**Adafruit ST7735 and ST7789 Library** by Adafruit
-	**FastLED** by Daniel Garcia
-5. At the top of the code, assign the corresponding network information to the variables `ssid` and `password`
-6. Press Upload and wait for flashing to complete
+   **PubSubClient** by Nick O'Leary
+   **DHT20** by Rob Tilaart
+   **ArduinoJson** by Benoit Blanchon
+   **Adafruit GFX Library** by Adafruit
+   **Adafruit ST7735 and ST7789 Library** by Adafruit
+   **FastLED** by Daniel Garcia
+6. At the top of the code, assign the corresponding network information to the variables `ssid` and `password`
+7. Press Upload and wait for flashing to complete
 
 ## Known Bugs:
 - If sensor is unplugged, it displays garbage values. We don't handle that issue, as it displays more than 7 digits when disconnected from ESP32.
