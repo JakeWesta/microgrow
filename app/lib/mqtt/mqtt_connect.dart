@@ -56,31 +56,11 @@ class MqttService {
     final client = await connect();
     final topic = 'microgrow/init';
 
-    // final msg = jsonEncode({
-    //   "id": habitatId,
-    //   "greenType": config.greenType,
-    //   "target": {
-    //     "temp": config.tempTarget,
-    //     "humidity": config.humidityTarget,
-    //   },
-    //   "light": {
-    //     "startTimeMs": config.lightStartMs,
-    //     "durationMs": config.lightDurationMs,
-    //     "intervalMs": config.lightIntervalMs,
-    //   },
-    //   "water": {
-    //     "startTimeMs": config.waterStartMs,
-    //     "durationMs": config.waterDurationMs,
-    //     "intervalMs": config.waterIntervalMs,
-    //   }
-    // });
-
-    final msg = jsonEncode({
-      "id": habitatId,
-      "greenType": config.greenType,
-      "target": {
-        "temp": config.tempTarget,
-        "humidity": config.humidityTarget,
+    final msg2 = jsonEncode({
+      "light": {
+        "startTimeMs": config.lightStartMs,
+        "durationMs": config.lightDurationMs,
+        "intervalMs": config.lightIntervalMs,
       },
       "water": {
         "startTimeMs": config.waterStartMs,
@@ -89,10 +69,27 @@ class MqttService {
       }
     });
 
+    final msg1 = jsonEncode({
+      "id": habitatId,
+      "greenType": config.greenType,
+      "target": {
+        "temp": config.tempTarget,
+        "humidity": config.humidityTarget,
+      }
+    });
+
     client.publishMessage(
       topic,
       MqttQos.atLeastOnce,
-      Uint8Buffer()..addAll(utf8.encode(msg)),
+      Uint8Buffer()..addAll(utf8.encode(msg1)),
+    );
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    client.publishMessage(
+      topic,
+      MqttQos.atLeastOnce,
+      Uint8Buffer()..addAll(utf8.encode(msg2)),
     );
   }
 
