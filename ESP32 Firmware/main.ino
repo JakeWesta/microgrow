@@ -40,6 +40,7 @@ CRGB leds[NUM_LEDS];
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT20 dht20;
 uint8_t fan_val;
+extern String habitatId;
 
 void initHardware() {
     // Button interrupt for config portal
@@ -103,6 +104,7 @@ void setup() {
   } else {
       Serial.println("NVS loaded");
 
+      habitatId = prefs.getString("habitatId", "");
       shared.targets.humidity    = prefs.getFloat("tHumidity", 60.0f);
       shared.targets.temperature = prefs.getFloat("tTemp", 75.0f);
 

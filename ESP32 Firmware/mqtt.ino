@@ -25,12 +25,15 @@ extern CRGB leds[NUM_LEDS];
 extern Preferences prefs;
 String habitatId = "";
 String green = "";
+bool hasId = false;
+bool hasSchedule = false;
 
 void saveConfigToNVS() {
     prefs.begin("microgrow", false);
 
     xSemaphoreTake(mutex, portMAX_DELAY);
     prefs.putBool("init", true);
+    prefs.putString("habitatId", habitatId);
     prefs.putFloat("tHumidity", shared.targets.humidity);
     prefs.putFloat("tTemp", shared.targets.temperature);
 
@@ -53,8 +56,9 @@ void saveConfigToNVS() {
 void subscribeToTopics(void)
 {
     // override
-    Serial.println("Subscribing to override");
-    client.subscribe(("microgrow/"+habitatId+"/override").c_str());
+    String topic = "microgrow/"+habitatId+"/override";
+    Serial.printf("Subscribing to %s", topic.c_str());
+    client.subscribe(topic.c_str());
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -77,50 +81,60 @@ void callback(char* topic, byte* payload, unsigned int length) {
     // -------------------------------
     // CONFIGURATION
     // -------------------------------
-    if (tpc.endsWith("/init")) {
-        habitatId = doc["id"].as<String>();
-        green = doc["greenType"].as<String>();
-        float tT = doc["target"]["temp"].as<float>();
-        float tH = doc["target"]["humidity"].as<float>();
+    if (tpc.endsWith("/init") && !initialized) {
+        
+        if (doc["hasID"].is<bool>) {
+          hasId = true;
+          habitatId = doc["id"].as<String>();
+          green = doc["greenType"].as<String>();
+          float tT = doc["target"]["temp"].as<float>();
+          float tH = doc["target"]["humidity"].as<float>();
 
-        if (tH < 0 || tT < 0) {
-            Serial.println("Invalid config: missing fields");
-            return;
+          if (tH < 0 || tT < 0) {
+              Serial.println("Invalid config: missing fields");
+              return;
+          }
+
+          xSemaphoreTake(mutex, portMAX_DELAY);
+          shared.targets.humidity = tH;
+          shared.targets.temperature = tT;
+          shared.targets_ready = true;
+          xSemaphoreGive(mutex);
         }
+        else if (doc["hasSchedule"].is<bool>)
+        {
+          hasSchedule = true;
+          unsigned long lightstartSec = doc["light"]["startTimeSec"].as<unsigned long>();
+          unsigned long lightdurSec   = doc["light"]["durationSec"].as<unsigned long>();
+          unsigned long lightintSec   = doc["light"]["intervalSec"].as<unsigned long>();
+          unsigned long waterstartSec = doc["water"]["startTimeSec"].as<unsigned long>();
+          unsigned long waterdurSec   = doc["water"]["durationSec"].as<unsigned long>();
+          unsigned long waterintSec   = doc["water"]["intervalSec"].as<unsigned long>();
 
-        xSemaphoreTake(mutex, portMAX_DELAY);
-        shared.targets.humidity = tH;
-        shared.targets.temperature = tT;
-        shared.targets_ready = true;
-        xSemaphoreGive(mutex);
-
-        unsigned long lightstartSec = doc["light"]["startTimeSec"].as<unsigned long>();
-        unsigned long lightdurSec   = doc["light"]["durationSec"].as<unsigned long>();
-        unsigned long lightintSec   = doc["light"]["intervalSec"].as<unsigned long>();
-        unsigned long waterstartSec = doc["water"]["startTimeSec"].as<unsigned long>();
-        unsigned long waterdurSec   = doc["water"]["durationSec"].as<unsigned long>();
-        unsigned long waterintSec   = doc["water"]["intervalSec"].as<unsigned long>();
-
-        xSemaphoreTake(mutex, portMAX_DELAY);
-        shared.schedules[LED_ID_S].startSec = lightstartSec;
-        shared.schedules[LED_ID_S].durationSec  = lightdurSec;
-        shared.schedules[LED_ID_S].intervalSec  = lightintSec;
-        shared.schedules[LED_ID_S].active      = true;
-        shared.schedules[LED_ID_S].triggered   = false;
-        shared.schedules[WATER_ID_S].startSec = waterstartSec;
-        shared.schedules[WATER_ID_S].durationSec  = waterdurSec;
-        shared.schedules[WATER_ID_S].intervalSec  = waterintSec;
-        shared.schedules[WATER_ID_S].active      = true;
-        shared.schedules[WATER_ID_S].triggered   = false;
-        shared.schedules_ready = true;
-        xSemaphoreGive(mutex);
+          xSemaphoreTake(mutex, portMAX_DELAY);
+          shared.schedules[LED_ID_S].startSec = lightstartSec;
+          shared.schedules[LED_ID_S].durationSec  = lightdurSec;
+          shared.schedules[LED_ID_S].intervalSec  = lightintSec;
+          shared.schedules[LED_ID_S].active      = true;
+          shared.schedules[LED_ID_S].triggered   = false;
+          shared.schedules[WATER_ID_S].startSec = waterstartSec;
+          shared.schedules[WATER_ID_S].durationSec  = waterdurSec;
+          shared.schedules[WATER_ID_S].intervalSec  = waterintSec;
+          shared.schedules[WATER_ID_S].active      = true;
+          shared.schedules[WATER_ID_S].triggered   = false;
+          shared.schedules_ready = true;
+          xSemaphoreGive(mutex);
+        }
         Serial.println("Updated configuration:");
         Serial.printf("  Humidity: %.1f\n", tH);
         Serial.printf("  Temperature: %.1f\n", tT);
-        initialized = true;
-        client.unsubscribe("microgrow/init");
-        saveConfigToNVS();
-        subscribeToTopics();
+        if (hasId && hasSchedule)
+        {       
+          initialized = true;
+          client.unsubscribe("microgrow/init");
+          saveConfigToNVS();
+          subscribeToTopics();
+        }
         return;
     }
 
@@ -134,6 +148,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
         int id = doc["actuator"].as<int>();
         bool enable = doc["enable"].as<bool>();
 
+        uint8_t r, g, b;
         xSemaphoreTake(mutex, portMAX_DELAY);
         if (enable) {
             switch (id)
@@ -150,8 +165,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
                   digitalWrite(MOTOR_PIN, LOW);
                   break;
                 case LED_ID:
-                  Serial.println("OVERRIDE: led on");
-                  fill_solid(leds, NUM_LEDS, CRGB(255, 255, 255));
+                  r = doc["r"].as<uint8_t>();
+                  g = doc["g"].as<uint8_t>();
+                  b = doc["b"].as<uint8_t>();
+                  Serial.printf("OVERRIDE: led on. rgb: [%hhu], [%hhu], [%hhu]\n", r, g, b);
+                  fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
                   FastLED.show();
                   break;
                 default:
@@ -256,6 +274,9 @@ bool connectMQTT() {
       if (!initialized) {
         Serial.println("subscribed to init");
         client.subscribe("microgrow/init");
+      } else {
+        Serial.println("already initialized");
+        subscribeToTopics();
       }
       // Set timezone and NTP servers
       configTime(
