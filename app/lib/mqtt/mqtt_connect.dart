@@ -56,17 +56,31 @@ class MqttService {
     final client = await connect();
     final topic = 'microgrow/init';
 
+    // final msg = jsonEncode({
+    //   "id": habitatId,
+    //   "greenType": config.greenType,
+    //   "target": {
+    //     "temp": config.tempTarget,
+    //     "humidity": config.humidityTarget,
+    //   },
+    //   "light": {
+    //     "startTimeMs": config.lightStartMs,
+    //     "durationMs": config.lightDurationMs,
+    //     "intervalMs": config.lightIntervalMs,
+    //   },
+    //   "water": {
+    //     "startTimeMs": config.waterStartMs,
+    //     "durationMs": config.waterDurationMs,
+    //     "intervalMs": config.waterIntervalMs,
+    //   }
+    // });
+
     final msg = jsonEncode({
       "id": habitatId,
       "greenType": config.greenType,
       "target": {
         "temp": config.tempTarget,
         "humidity": config.humidityTarget,
-      },
-      "light": {
-        "startTimeMs": config.lightStartMs,
-        "durationMs": config.lightDurationMs,
-        "intervalMs": config.lightIntervalMs,
       },
       "water": {
         "startTimeMs": config.waterStartMs,
