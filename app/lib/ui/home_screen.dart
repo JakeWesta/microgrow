@@ -22,6 +22,9 @@ void showDeleteConfirm(BuildContext context, Habitat habitat) {
         TextButton(
           onPressed: () {
             final appState = context.read<MyAppState>();
+            MqttService.deleteHabitat(
+              habitatId: habitat.id
+            );
             appState.deleteHabitat(habitat);
             Navigator.pop(context); 
           },
@@ -150,9 +153,6 @@ class HomeScreen extends StatelessWidget {
                                   icon: const Icon(Icons.delete),
                                   onPressed: () {
                                     showDeleteConfirm(context, habitat);
-                                    MqttService.deleteHabitat(
-                                      habitatId: habitat.id
-                                    );
                                   },
                                 ),
                               ],
