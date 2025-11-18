@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/habitat_obj.dart';
 import '../mqtt/mqtt_connect.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+
 
 class ManualControlScreen extends StatefulWidget {
   final Habitat habitat;
@@ -15,6 +17,8 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
   bool lightOn = false;
   bool fanOn = false;
   bool waterFlashing = false;
+
+  Color selectedColor = Colors.blue;
 
   Future<void> sendOverride(String actuator, int val, {int? r, int? g, int? b}) async {
     try {
@@ -91,6 +95,95 @@ Widget waterCard() {
   );
 }
 
+Widget lightColorCard() {
+  final List<Color> colors = [
+    Colors.white,
+    Colors.red,
+    Colors.green,
+    Colors.blue,
+    Colors.yellow,
+    Colors.purple,
+    Colors.cyan,
+    Colors.orange,
+  ];
+  return Card(
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.symmetric(vertical: 8),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Light Color',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Text('Selected: ', style: TextStyle(fontWeight: FontWeight.bold)),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: selectedColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.black26),
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Pick a Color'),
+                      content: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: colors.map((c) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() => selectedColor = c);
+                              if (lightOn) {
+                                sendOverride(
+                                  'light',
+                                  1,
+                                  r: (c.r * 255).round(),
+                                  g: (c.g * 255).round(),
+                                  b: (c.b * 255).round(),
+                                );
+                              }
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.black26),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Pick Color'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -119,20 +212,22 @@ Widget waterCard() {
         children: [
           const SizedBox(height: 16),
           waterCard(),
+          lightColorCard(),
           toggleCard('Light', lightOn, (val) {
             setState(() => lightOn = val);
             sendOverride(
               'light',
               val ? 1 : 0,
-              r: 255,
-              g: 255,
-              b: 255,
+              r: (selectedColor.r * 255).round(),
+              g: (selectedColor.g * 255).round(),
+              b: (selectedColor.b * 255).round(),
             );
           }),
           toggleCard('Fan', fanOn, (val) {
             setState(() => fanOn = val);
             sendOverride('fan', val ? 1 : 0);
           }),
+          
         ],
       ),
       ),
