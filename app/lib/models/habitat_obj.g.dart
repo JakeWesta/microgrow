@@ -22,12 +22,12 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       greenType: fields[2] as String,
       tempTarget: fields[3] as int,
       humidityTarget: fields[4] as int,
-      lightStartMs: fields[5] as int,
-      lightDurationMs: fields[6] as int,
-      lightIntervalMs: fields[7] as int,
-      waterStartMs: fields[8] as int,
-      waterDurationMs: fields[9] as int,
-      waterIntervalMs: fields[10] as int,
+      lightStartSec: fields[5] as int,
+      lightDurationSec: fields[6] as int,
+      lightIntervalSec: fields[7] as int,
+      waterStartSec: fields[8] as int,
+      waterDurationSec: fields[9] as int,
+      waterIntervalSec: fields[10] as int,
     );
   }
 
@@ -46,17 +46,17 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       ..writeByte(4)
       ..write(obj.humidityTarget)
       ..writeByte(5)
-      ..write(obj.lightStartMs)
+      ..write(obj.lightStartSec)
       ..writeByte(6)
-      ..write(obj.lightDurationMs)
+      ..write(obj.lightDurationSec)
       ..writeByte(7)
-      ..write(obj.lightIntervalMs)
+      ..write(obj.lightIntervalSec)
       ..writeByte(8)
-      ..write(obj.waterStartMs)
+      ..write(obj.waterStartSec)
       ..writeByte(9)
-      ..write(obj.waterDurationMs)
+      ..write(obj.waterDurationSec)
       ..writeByte(10)
-      ..write(obj.waterIntervalMs);
+      ..write(obj.waterIntervalSec);
   }
 
   @override

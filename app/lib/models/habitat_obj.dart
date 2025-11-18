@@ -22,23 +22,23 @@ class Habitat extends HiveObject {
 
   // Light Schedule
   @HiveField(5)
-  int lightStartMs;
+  int lightStartSec;
 
   @HiveField(6)
-  int lightDurationMs;
+  int lightDurationSec;
 
   @HiveField(7)
-  int lightIntervalMs;
+  int lightIntervalSec;
 
   // Water Schedule
   @HiveField(8)
-  int waterStartMs;
+  int waterStartSec;
 
   @HiveField(9)
-  int waterDurationMs;
+  int waterDurationSec;
 
   @HiveField(10)
-  int waterIntervalMs;
+  int waterIntervalSec;
 
   Habitat({
     required this.id,
@@ -46,11 +46,11 @@ class Habitat extends HiveObject {
     required this.greenType,
     required this.tempTarget,
     required this.humidityTarget,
-    required this.lightStartMs,
-    required this.lightDurationMs,
-    required this.lightIntervalMs,
-    required this.waterStartMs,
-    required this.waterDurationMs,
-    required this.waterIntervalMs
+    required this.lightStartSec,
+    required this.lightDurationSec,
+    required this.lightIntervalSec,
+    required this.waterStartSec,
+    required this.waterDurationSec,
+    required this.waterIntervalSec
   });
 }

@@ -11,24 +11,24 @@ class HabitatConfig {
   final int tempTarget;
   final int humidityTarget;
 
-  final int lightStartMs;
-  final int lightDurationMs;
-  final int lightIntervalMs;
+  final int lightStartSec;
+  final int lightDurationSec;
+  final int lightIntervalSec;
 
-  final int waterStartMs;
-  final int waterDurationMs;
-  final int waterIntervalMs;
+  final int waterStartSec;
+  final int waterDurationSec;
+  final int waterIntervalSec;
 
   const HabitatConfig({
     required this.greenType,
     required this.tempTarget,
     required this.humidityTarget,
-    required this.lightStartMs,
-    required this.lightDurationMs,
-    required this.lightIntervalMs,
-    required this.waterStartMs,
-    required this.waterDurationMs,
-    required this.waterIntervalMs,
+    required this.lightStartSec,
+    required this.lightDurationSec,
+    required this.lightIntervalSec,
+    required this.waterStartSec,
+    required this.waterDurationSec,
+    required this.waterIntervalSec,
   });
 
   Map<String, dynamic> toJson() => {
@@ -38,14 +38,14 @@ class HabitatConfig {
       "humidity": humidityTarget,
     },
     "light": {
-      "startTimeMs": lightStartMs,
-      "durationMs": lightDurationMs,
-      "intervalMs": lightIntervalMs,
+      "startTimeSec": lightStartSec,
+      "durationSec": lightDurationSec,
+      "intervalSec": lightIntervalSec,
     },
     "water": {
-      "startTimeMs": waterStartMs,
-      "durationMs": waterDurationMs,
-      "intervalMs": waterIntervalMs,
+      "startTimeSec": waterStartSec,
+      "durationSec": waterDurationSec,
+      "intervalSec": waterIntervalSec,
     }
   };
 }
@@ -69,35 +69,30 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
   Widget build(BuildContext context) {
 
     final now = DateTime.now();
-    final msSinceMidnight =
-        now.hour * 3600000 +
-        now.minute * 60000 +
-        now.second * 1000 +
-        now.millisecond;
+    final secSinceMidnight = now.hour * 3600 + now.minute * 60 + now.second;
 
     final Map<String, HabitatConfig> greenOptions = {
       'Basil': HabitatConfig(
         greenType: 'Basil',
-        tempTarget: 24,
-        humidityTarget: 60,
-        lightStartMs: msSinceMidnight,
-        lightDurationMs: 3600000,  
-        lightIntervalMs: 86400000, 
-        waterStartMs: msSinceMidnight,
-        waterDurationMs: 30000,    
-        waterIntervalMs: 28800000, 
+        tempTarget: 80,
+        humidityTarget: 78,
+        lightStartSec: secSinceMidnight,
+        lightDurationSec: 15, 
+        lightIntervalSec: 30, 
+        waterStartSec: secSinceMidnight,
+        waterDurationSec: 3, 
+        waterIntervalSec: 15, 
       ),
-
       'Broccoli': HabitatConfig(
         greenType: 'Broccoli',
-        tempTarget: 22,
-        humidityTarget: 55,
-        lightStartMs: msSinceMidnight,
-        lightDurationMs: 5400000, 
-        lightIntervalMs: 86400000,
-        waterStartMs: msSinceMidnight,
-        waterDurationMs: 45000, 
-        waterIntervalMs: 21600000,
+        tempTarget: 75,
+        humidityTarget: 70,
+        lightStartSec: secSinceMidnight,
+        lightDurationSec: 10, 
+        lightIntervalSec: 30,
+        waterStartSec: secSinceMidnight,
+        waterDurationSec: 6, 
+        waterIntervalSec: 15, 
       ),
     };
 
@@ -184,12 +179,12 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                           greenType: config.greenType,
                           tempTarget: config.tempTarget,
                           humidityTarget: config.humidityTarget,
-                          lightStartMs: config.lightStartMs,
-                          lightDurationMs: config.lightDurationMs,
-                          lightIntervalMs: config.lightIntervalMs,
-                          waterStartMs: config.waterStartMs,
-                          waterDurationMs: config.waterDurationMs,
-                          waterIntervalMs: config.waterIntervalMs,
+                          lightStartSec: config.lightStartSec,
+                          lightDurationSec: config.lightDurationSec,
+                          lightIntervalSec: config.lightIntervalSec,
+                          waterStartSec: config.waterStartSec,
+                          waterDurationSec: config.waterDurationSec,
+                          waterIntervalSec: config.waterIntervalSec,
                         );
 
                         context.read<MyAppState>().addHabitat(newHabitat);

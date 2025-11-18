@@ -12,7 +12,6 @@ class MqttService {
   static const port = 1883;
   static MqttServerClient? client;
   
-  
   static Future<MqttServerClient> connect() async {
 
     final client = MqttServerClient(
@@ -58,14 +57,14 @@ class MqttService {
 
     final msg2 = jsonEncode({
       "light": {
-        "startTimeMs": config.lightStartMs,
-        "durationMs": config.lightDurationMs,
-        "intervalMs": config.lightIntervalMs,
+        "startTimeSec": config.lightStartSec,
+        "durationSec": config.lightDurationSec,
+        "intervalSec": config.lightIntervalSec,
       },
       "water": {
-        "startTimeMs": config.waterStartMs,
-        "durationMs": config.waterDurationMs,
-        "intervalMs": config.waterIntervalMs,
+        "startTimeSec": config.waterStartSec,
+        "durationSec": config.waterDurationSec,
+        "intervalSec": config.waterIntervalSec,
       }
     });
 
