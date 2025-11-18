@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
+import '../mqtt/mqtt_connect.dart';
+
+
 
 class TomagachiScreen extends StatefulWidget {
   const TomagachiScreen({super.key});
@@ -20,6 +24,11 @@ class _TomagachiScreenState extends State<TomagachiScreen>
 
   final double iconWidth = 50;
 
+  Color skyColor = Colors.lightBlue[300]!;
+
+  Timer? partyTimer;
+  bool isPartyOn = false;
+
   @override
   void initState() {
     super.initState();
@@ -30,10 +39,13 @@ class _TomagachiScreenState extends State<TomagachiScreen>
   }
 
   @override
+@override
   void dispose() {
+    partyTimer?.cancel();
     controller.dispose();
     super.dispose();
   }
+
 
   IconData iconForGreenType(String type) {
     switch (type.toLowerCase()) {
@@ -45,6 +57,49 @@ class _TomagachiScreenState extends State<TomagachiScreen>
         return Icons.spa;
     }
   }
+
+  void triggerParty() {
+    final List<Color> partyColors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.yellow,
+      Colors.purple,
+      Colors.orange,
+      Colors.cyan,
+      Colors.pink,
+    ];
+
+    if (isPartyOn) {
+      partyTimer?.cancel();
+      partyTimer = null;
+      setState(() {
+        isPartyOn = false;
+        skyColor = Colors.lightBlue[300]!;
+      });
+    } else {
+      isPartyOn = true;
+
+      partyTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+        final Color c = partyColors[Random().nextInt(partyColors.length)];
+
+        setState(() => skyColor = c);
+
+        final habitats = context.read<MyAppState>().getHabitats;
+        for (final habitat in habitats) {
+          MqttService.actuatorPublish(
+            habitatId: habitat.id,
+            actuatorName: 'light',
+            val: 1,
+              r: (c.r * 255).round(),
+              g: (c.g * 255).round(),
+              b: (c.b * 255).round(),
+          );
+        }
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -70,12 +125,28 @@ class _TomagachiScreenState extends State<TomagachiScreen>
 
           return Stack(
             children: [
-              Container(color: Colors.lightBlue[300]),
+              Container(color: skyColor),
               Positioned(
                 top: 40,
                 left: 40,
                 child: Icon(Icons.wb_sunny, size: 60, color: Colors.yellow[700]),
               ),
+              Positioned(
+              top: 40,
+              right: 20,
+              child: ElevatedButton(
+                onPressed: triggerParty,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 159, 156, 159),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  isPartyOn ? 'Stop Party' : 'Party Time',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ),
               Positioned(
                 bottom: 0,
                 left: 0,
