@@ -41,30 +41,58 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
     );
   }
 
-  Widget sensorCard(String label, String? value) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(
-              value ?? 'No data',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+Widget sensorCard(String label, String? value) {
+  String displayValue;
+
+  if (value == null || value.isEmpty) {
+    displayValue = 'No data';
+  } else {
+    final num? numValue = num.tryParse(value.trim());
+
+    if (label == 'Light' || label == 'Humidity') {
+      displayValue = numValue != null ? "${numValue.toStringAsFixed(0)} %" : "$value %";
+    } else if (label == 'Temperature') {
+      displayValue = numValue != null ? "${numValue.toStringAsFixed(0)} F" : "$value F";
+    } else if (label == 'Water Level') {
+      int waterInt = int.tryParse(value) ?? 2;
+      switch (waterInt) {
+        case 0:
+          displayValue = "All Good!";
+          break;
+        case 1:
+          displayValue = "Too Low!";
+          break;
+        default:
+          displayValue = "No data";
+      }
+    } else {
+      displayValue = value;
+    }
   }
+
+  return Card(
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.symmetric(vertical: 8),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(
+            displayValue,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +122,7 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
             sensorCard('Light', light),
             sensorCard('Humidity', humidity),
             sensorCard('Temperature', temp),
-            sensorCard('Water Level', water),
+            sensorCard('Water Level', water)
           ],
         ),
       ),
