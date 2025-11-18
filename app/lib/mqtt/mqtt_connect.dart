@@ -113,11 +113,10 @@ class MqttService {
     final msg = jsonEncode({
       'actuator': options[actuatorName],
       'enable': val,
-      'color': {
-        'r': r ?? 0,
-        'g': g ?? 0,
-        'b': b ?? 0
-      }
+      'value': 1,
+      'r': r ?? 0,
+      'g': g ?? 0,
+      'b': b ?? 0
     });
 
     client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
