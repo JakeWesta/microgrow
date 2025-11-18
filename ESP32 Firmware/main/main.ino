@@ -74,6 +74,14 @@ void initHardware() {
 
     // TFT Display
     tft.init(240, 320);
+    tft.setRotation(1);
+    tft.setCursor(5, 100);
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(5);
+    tft.println("MicroGrow");
+    tft.setTextSize(1);
+    tft.println();
+    tft.println("Initializing...");
     tft.fillScreen(ST77XX_BLACK);
 
     // Temperature and humidity sensors

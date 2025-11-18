@@ -7,7 +7,7 @@
 #include "defs.h"
 
 // Configuration
-const char* MQTT_BROKER = "10.2.84.7";
+const char* MQTT_BROKER = "broker.emqx.io";
 const int MQTT_PORT = 1883;
 const uint32_t WIFI_TIMEOUT_MS = 10000;
 const uint32_t MQTT_TIMEOUT_MS = 10000;
@@ -25,10 +25,41 @@ extern volatile bool portalRequested;
 extern bool initialized;
 extern CRGB leds[NUM_LEDS];
 extern Preferences prefs;
+extern Adafruit_ST7789 tft;
 String habitatId = "";
 String green = "";
 bool hasId = false;
 bool hasSchedule = false;
+
+void displayHabitatInfo(String id, String greenType) {
+  tft.fillScreen(ST77XX_BLACK);
+  tft.setCursor(5, 20);
+  tft.setTextColor(ST77XX_GREEN);
+  tft.setTextSize(4);
+  tft.println("MicroGrow");
+  tft.setTextSize(3);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.println();
+  tft.print("ID: ");
+  tft.println(id);
+  tft.print("Type: ");
+  tft.println(greenType);
+}
+
+void updateDisplay(float currentTemp, float currentHumidity, bool waterLevel) {
+  tft.fillRect(0, 100, 240, 100, ST77XX_BLACK);
+  tft.setCursor(5, 100);
+  tft.setTextColor(ST77XX_CYAN);
+  tft.setTextSize(3);
+  tft.print("Temp: ");
+  tft.print(currentTemp, 1);
+  tft.println(" F");
+  tft.print("Humidity: ");
+  tft.print(currentHumidity, 1);
+  tft.println(" %");
+  tft.print("Water: ");
+  tft.println(waterLevel ? "LOW" : "OK");
+}
 
 void saveConfigToNVS() {
     prefs.begin("microgrow", false);
@@ -84,8 +115,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
     // CONFIGURATION
     // -------------------------------
     if (tpc.endsWith("/init") && !initialized) {
-        
-        if (!habitatId.isEmpty()) {
+
+        if (doc.containsKey("id")) {
           hasId = true;
           habitatId = doc["id"].as<String>();
           green = doc["greenType"].as<String>();
@@ -96,7 +127,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
               Serial.println("Invalid config: missing fields");
               return;
           }
-
+          Serial.println("ID RECIEVED");
           xSemaphoreTake(mutex, portMAX_DELAY);
           shared.targets.humidity = tH;
           shared.targets.temperature = tT;
@@ -111,9 +142,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
             FastLED.show();
             vTaskDelay(pdMS_TO_TICKS(250));
           }
+          displayHabitatInfo(habitatId, green);
         }
         else
         {
+          Serial.println("Doesnt have ID");
           hasSchedule = true;
           unsigned long lightstartSec = doc["light"]["startTimeSec"].as<unsigned long>();
           unsigned long lightdurSec   = doc["light"]["durationSec"].as<unsigned long>();
@@ -266,7 +299,7 @@ bool connectWiFi() {
   } else {
     Serial.println("WiFi connection timeout");
   }
-  
+  tft.println("WiFi Connected!");
   return connected;
 }
 
@@ -350,7 +383,7 @@ bool publishData() {
 
     if (!client.publish((base + "light").c_str(), String(light).c_str()))
          return false;
-
+    updateDisplay(temp, hum, (bool)water);
     return true;
 }
 

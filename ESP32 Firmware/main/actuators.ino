@@ -5,14 +5,11 @@ extern Shared shared;
 extern SemaphoreHandle_t mutex;
 
 void writeFan(void *arg) {
-    Serial.println("writeFan");
     uint8_t pwm = *((uint8_t*)arg);
-    analogWrite(FAN_PIN, pwm);
-    Serial.printf("Fan PWM set to %d\n", pwm);
+    digitalWrite(FAN_PIN, pwm?HIGH:LOW);
 }
 
 void fillAutoCommand(int index, void *cmdData) {
-    Serial.println("auto command");
     // Only handle fan for now
     if (index != FAN_ID)
         return;
@@ -20,11 +17,13 @@ void fillAutoCommand(int index, void *cmdData) {
     uint8_t *pwm = (uint8_t*)cmdData;
     float temp;
     float hum;
-
+    float targetHumidity, targetTemp;
     // Read sensors safely
     if (xSemaphoreTake(mutex, pdMS_TO_TICKS(50)) == pdTRUE) {
         temp = shared.sensors[TEMPERATURE_ID].value;
         hum  = shared.sensors[HUMIDITY_ID].value;
+        targetHumidity = shared.targets.humidity;
+        targetTemp = shared.targets.temperature;
         xSemaphoreGive(mutex);
     } else {
         return;
@@ -43,7 +42,6 @@ void fillAutoCommand(int index, void *cmdData) {
     else {
         *pwm = 0;
     }
-    Serial.printf("PWM %d\n", *pwm);
 }
 
 void actuatorTask(void* pv) {

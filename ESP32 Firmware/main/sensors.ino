@@ -8,7 +8,6 @@ extern SemaphoreHandle_t mutex;
 extern DHT20 dht20;
 
 float readTemperature(void) {
-    Serial.println("readTemperature");
     int status = dht20.read();
     if (status != DHT20_OK) return NAN;
 
@@ -16,7 +15,6 @@ float readTemperature(void) {
 }
 
 float readHumidity(void) {
-    Serial.println("readHumidity");
     int status = dht20.read();
     if (status != DHT20_OK) return NAN;
 
@@ -24,7 +22,6 @@ float readHumidity(void) {
 }
 
 float readWaterLevel(void) {
-    Serial.println("readWaterLevel");
     return (float)digitalRead(WATER_LEVEL_PIN);
 }
 

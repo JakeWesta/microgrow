@@ -5,12 +5,12 @@
 #define BUTTON_PIN 4
 #define LED_PIN 25
 #define NUM_LEDS 256
-#define MOTOR_PIN 32
+#define MOTOR_PIN 14
 #define TFT_CS 5
 #define TFT_DC 16
 #define TFT_RST 17
 #define WATER_LEVEL_PIN 26
-#define FAN_PIN 2
+#define FAN_PIN 27
 
 // ----- Actuators -----
 #define NUM_ACTUATORS 1

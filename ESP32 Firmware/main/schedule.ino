@@ -68,7 +68,6 @@ void scheduleTask(void* pv) {
 
         unsigned long now = secondsSinceMidnight();
 
-        Serial.printf("Time since midnight: %lu\n", now);
 
         for (int i = 0; i < NUM_SCHEDULES; i++) {
 
