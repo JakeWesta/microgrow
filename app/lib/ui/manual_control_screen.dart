@@ -16,13 +16,17 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
   bool fanOn = false;
   bool waterFlashing = false;
 
-  Future<void> sendOverride(String actuator, int val) async {
+  Future<void> sendOverride(String actuator, int val, {int? r, int? g, int? b}) async {
     try {
       await MqttService.actuatorPublish(
         habitatId: widget.habitat.id,
         actuatorName: actuator,
         val: val,
+        r: r ?? 0,
+        g: g ?? 0,
+        b: b ?? 0
       );
+
       if (actuator.toLowerCase() == 'water') {
         setState(() => waterFlashing = true);
         await Future.delayed(const Duration(milliseconds: 1000));
@@ -117,7 +121,13 @@ Widget waterCard() {
           waterCard(),
           toggleCard('Light', lightOn, (val) {
             setState(() => lightOn = val);
-            sendOverride('light', val ? 1 : 0);
+            sendOverride(
+              'light',
+              val ? 1 : 0,
+              r: 255,
+              g: 255,
+              b: 255,
+            );
           }),
           toggleCard('Fan', fanOn, (val) {
             setState(() => fanOn = val);
