@@ -83,7 +83,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     // -------------------------------
     if (tpc.endsWith("/init") && !initialized) {
         
-        if (doc["hasID"].is<bool>) {
+        if (doc["id"].is<String>) {
           hasId = true;
           habitatId = doc["id"].as<String>();
           green = doc["greenType"].as<String>();
@@ -101,7 +101,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
           shared.targets_ready = true;
           xSemaphoreGive(mutex);
         }
-        else if (doc["hasSchedule"].is<bool>)
+        else
         {
           hasSchedule = true;
           unsigned long lightstartSec = doc["light"]["startTimeSec"].as<unsigned long>();
