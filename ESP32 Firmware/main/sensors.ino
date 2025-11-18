@@ -6,16 +6,16 @@
 extern Shared shared;
 extern SemaphoreHandle_t mutex;
 extern DHT20 dht20;
+bool status;
 
 float readTemperature(void) {
-    int status = dht20.read();
+    status = dht20.read();
     if (status != DHT20_OK) return NAN;
 
     return dht20.getTemperature() * 1.8 + 32;
 }
 
 float readHumidity(void) {
-    int status = dht20.read();
     if (status != DHT20_OK) return NAN;
 
     return dht20.getHumidity();
