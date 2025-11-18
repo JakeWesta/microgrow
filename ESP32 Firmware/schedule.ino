@@ -4,6 +4,8 @@
 
 extern Shared shared;
 extern SemaphoreHandle_t mutex;
+extern SemaphoreHandle_t led_mutex;
+extern bool led_state;
 extern CRGB leds[];
 
 void setLEDColor(uint8_t r, uint8_t g, uint8_t b) {
@@ -13,11 +15,17 @@ void setLEDColor(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void ledOn() {
+    xSemaphoreTake(led_mutex, portMAX_DELAY);
+    led_state = false;
+    xSemaphoreGive(led_mutex);
     Serial.println("led on");
     setLEDColor(255, 255, 255);
 }
 
 void ledOff() {
+    xSemaphoreTake(led_mutex, portMAX_DELAY);
+    led_state = true;
+    xSemaphoreGive(led_mutex);
     Serial.println("led off");
     setLEDColor(0, 0, 0);
 }

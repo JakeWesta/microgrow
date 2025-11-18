@@ -19,6 +19,8 @@ PubSubClient client(espClient);
 
 extern Shared shared;
 extern SemaphoreHandle_t mutex;
+extern SemaphoreHandle_t led_mutex;
+extern bool led_state;
 extern volatile bool portalRequested;
 extern bool initialized;
 extern CRGB leds[NUM_LEDS];
@@ -177,6 +179,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
                   Serial.printf("OVERRIDE: led on. rgb: [%hhu], [%hhu], [%hhu]\n", r, g, b);
                   fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
                   FastLED.show();
+                  xSemaphoreTake(led_mutex, portMAX_DELAY);
+                  led_state = true;
+                  xSemaphoreGive(led_mutex);
                   break;
                 default:
                   break;
@@ -193,6 +198,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
                   Serial.println("OVERRIDE: led off");
                   fill_solid(leds, NUM_LEDS, CRGB(0, 0, 0));
                   FastLED.show();
+                  xSemaphoreTake(led_mutex, portMAX_DELAY);
+                  led_state = false;
+                  xSemaphoreGive(led_mutex);
                   break;
                 default:
                   break;
@@ -309,7 +317,11 @@ bool connectMQTT() {
 }
 bool publishData() {
     Serial.println("publishing data");
-    float temp, hum, water, light;
+    float temp, hum, water;
+    int light;
+    xSemaphoreTake(led_mutex, portMAX_DELAY);
+    light = led_state ? 100 : 0;
+    xSemaphoreGive(led_mutex);
 
     // Acquire shared state
     if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
@@ -327,17 +339,17 @@ bool publishData() {
     String base = "microgrow/" + habitatId + "/";
 
     // Publish numerical values
-    if (!client.publish((base + "temp").c_str(),     String(temp).c_str()))
+    if (!client.publish((base + "temp").c_str(), String(temp).c_str()))
         return false;
 
     if (!client.publish((base + "humidity").c_str(), String(hum).c_str()))
         return false;
 
-    if (!client.publish((base + "water").c_str(),    String(water).c_str()))
+    if (!client.publish((base + "water").c_str(), String(water).c_str()))
         return false;
 
-    // if (!client.publish((base + "light").c_str(),    String(light).c_str()))
-    //     return false;
+    if (!client.publish((base + "light").c_str(), String(light).c_str()))
+         return false;
 
     return true;
 }

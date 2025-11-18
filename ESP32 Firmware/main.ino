@@ -41,6 +41,8 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT20 dht20;
 uint8_t fan_val;
 extern String habitatId;
+SemaphoreHandle_t led_mutex;
+bool led_state;
 
 void initHardware() {
     // Button interrupt for config portal
@@ -88,8 +90,9 @@ void setup() {
 
   initHardware();
 
-  // Create mutex
+  // Create mutexes
   mutex = xSemaphoreCreateMutex();
+  led_mutex = xSemaphoreCreateMutex();
 
   prefs.begin("microgrow", true);
 
