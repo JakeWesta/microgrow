@@ -54,7 +54,8 @@ Widget sensorCard(String label, String? value) {
     } else if (label == 'Temperature') {
       displayValue = numValue != null ? "${numValue.toStringAsFixed(0)} F" : "$value F";
     } else if (label == 'Water Level') {
-      int waterInt = int.tryParse(value) ?? 2;
+      double? waterDouble = double.tryParse(value);
+      int waterInt = waterDouble?.round() ?? 2;
       switch (waterInt) {
         case 0:
           displayValue = "All Good!";

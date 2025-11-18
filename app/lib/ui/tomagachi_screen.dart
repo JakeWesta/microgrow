@@ -77,6 +77,19 @@ class _TomagachiScreenState extends State<TomagachiScreen>
         isPartyOn = false;
         skyColor = Colors.lightBlue[300]!;
       });
+    
+    final habitats = context.read<MyAppState>().getHabitats;
+    
+    for (final habitat in habitats) {
+        MqttService.actuatorPublish(
+          habitatId: habitat.id,
+          actuatorName: 'light',
+          val: 0,
+          r: 0,
+          g: 0,
+          b: 0,
+        );
+      }
     } else {
       isPartyOn = true;
 
