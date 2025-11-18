@@ -83,7 +83,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     // -------------------------------
     if (tpc.endsWith("/init") && !initialized) {
         
-        if (doc["id"].is<String>) {
+        if (!habitatId.isEmpty()) {
           hasId = true;
           habitatId = doc["id"].as<String>();
           green = doc["greenType"].as<String>();
@@ -100,6 +100,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
           shared.targets.temperature = tT;
           shared.targets_ready = true;
           xSemaphoreGive(mutex);
+
+          for (int i = 0; i < 3; i++) {          
+            fill_solid(leds, NUM_LEDS, CRGB(0, 255, 0));
+            FastLED.show();
+            vTaskDelay(pdMS_TO_TICKS(250));
+            fill_solid(leds, NUM_LEDS, CRGB(0, 0, 0));
+            FastLED.show();
+            vTaskDelay(pdMS_TO_TICKS(250));
+          }
         }
         else
         {
@@ -125,9 +134,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
           shared.schedules_ready = true;
           xSemaphoreGive(mutex);
         }
-        Serial.println("Updated configuration:");
-        Serial.printf("  Humidity: %.1f\n", tH);
-        Serial.printf("  Temperature: %.1f\n", tT);
         if (hasId && hasSchedule)
         {       
           initialized = true;
