@@ -3,3 +3,7 @@ Tried ordering pcb. Had issues with SMT parts sourcing. Switched to THT, redesig
 Tried sourcing Micro molex connectors, switched to JST PH connectors, redesigned board.
 Ordered pcb (hooray) and necessary connectors
 Looked into more portable power solutions. Most are expensive, requires some thought and team consideration
+
+1/27/2026 - 1-2hrs
+Measuring power output of full load of board to find power constraints for portable battery. Somewhat successful, but didnt have a data cable, 
+  only a power cable, so couldn't turn on fan or lights. But we know now the floor to turn it on with external power is roughly 5V/.3A
