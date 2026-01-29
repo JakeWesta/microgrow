@@ -193,52 +193,89 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
         uint8_t r, g, b;
         xSemaphoreTake(mutex, portMAX_DELAY);
-        if (enable) {
-            switch (id)
-            {
-                case FAN_ID:
-                  Serial.println("Manual override for fan");
-                  shared.actuators[id].manualOverride = true;
-                  *((uint8_t*)(shared.actuators[id].cmdData)) = doc["value"].as<uint8_t>();
-                  break;
-                case WATER_PUMP_ID:
-                  Serial.println("OVERRIDE: pump");
-                  digitalWrite(MOTOR_PIN, HIGH);
-                  vTaskDelay(pdMS_TO_TICKS(2000));
-                  digitalWrite(MOTOR_PIN, LOW);
-                  break;
-                case LED_ID:
-                  r = doc["r"].as<uint8_t>();
-                  g = doc["g"].as<uint8_t>();
-                  b = doc["b"].as<uint8_t>();
-                  Serial.printf("OVERRIDE: led on. rgb: [%hhu], [%hhu], [%hhu]\n", r, g, b);
-                  fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
-                  FastLED.show();
-                  xSemaphoreTake(led_mutex, portMAX_DELAY);
-                  led_state = true;
-                  xSemaphoreGive(led_mutex);
-                  break;
-                default:
-                  break;
-            }            
 
-            Serial.printf("Manual override enabled: actuator %d\n", id);
-        } else {
-            switch (id) {
+        // Manual override ON
+        if (enable) {
+          switch (id) {
+            // Fan
+            case FAN_ID:
+              Serial.println("OVERRIDE: Fan on");
+              shared.actuators[id].manualOverride = true;
+              *((uint8_t*)(shared.actuators[id].cmdData)) = doc["value"].as<uint8_t>();
+              break;
+
+            // Water Pump
+            case WATER_PUMP_ID:
+              Serial.println("OVERRIDE: Pump on");
+              digitalWrite(MOTOR_PIN, HIGH);
+              vTaskDelay(pdMS_TO_TICKS(2000));
+              digitalWrite(MOTOR_PIN, LOW);
+              break;
+              
+            // LED
+            case LED_ID:
+              r = doc["r"].as<uint8_t>();
+              g = doc["g"].as<uint8_t>();
+              b = doc["b"].as<uint8_t>();
+              Serial.printf("OVERRIDE: LED on. rgb: [%hhu], [%hhu], [%hhu]\n", r, g, b);
+              fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
+              FastLED.show();
+              xSemaphoreTake(led_mutex, portMAX_DELAY);
+              led_state = true;
+              xSemaphoreGive(led_mutex);
+              break;
+
+            // Humidifier
+            case HUMIDIFIER_ID:
+              Serial.println("OVERRIDE: Humidifier on");
+              digitalWrite(HUMIDIFIER_PIN, HIGH);     // TODO: Check if active high/low
+              vTaskDelay(pdMS_TO_TICKS(2000));        // TODO: Test how long to release for (or keep constant until turned off)
+              digitalWrite(HUMIDIFIER_PIN, LOW);      // Same check here
+              break;
+
+            default:
+              break;
+
+            // shared.actuators[id].manualOverride = true;      // TODO: See if needed for all cases
+            // shared.actuators[id].manualTriggered = true;
+          }        
+          Serial.printf("Manual override enabled: actuator %d\n", id);
+        }
+
+        // Manual override OFF
+        else {
+            switch (id) 
+            {
+                // Fan
                 case FAN_ID:
+                  Serial.println("OVERRIDE: Fan off");
                   shared.actuators[id].manualOverride = false;
                   shared.actuators[id].manualTriggered = false;
                   break;
+
+                // LED
                 case LED_ID:
-                  Serial.println("OVERRIDE: led off");
+                  Serial.println("OVERRIDE: LED off");
                   fill_solid(leds, NUM_LEDS, CRGB(0, 0, 0));
                   FastLED.show();
                   xSemaphoreTake(led_mutex, portMAX_DELAY);
                   led_state = false;
                   xSemaphoreGive(led_mutex);
                   break;
+
+                // Humidifier
+                case HUMIDIFIER_ID:
+                  Serial.println("OVERRIDE: Humidifier off");
+                  digitalWrite(HUMIDIFIER_PIN, HIGH);     // TODO: Check if active high/low
+                  vTaskDelay(pdMS_TO_TICKS(2000));        // TODO: Test how long to release for (or keep constant until turned off)
+                  digitalWrite(HUMIDIFIER_PIN, LOW);      // Same check here
+                  break;
+
                 default:
                   break;
+
+            // shared.actuators[id].manualOverride = true;      // TODO: See if needed for all cases
+            // shared.actuators[id].manualTriggered = true;
             }
 
             Serial.printf("Manual override disabled: actuator %d\n", id);

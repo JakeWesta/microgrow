@@ -11,12 +11,14 @@
 #define TFT_RST 17
 #define WATER_LEVEL_PIN 26
 #define FAN_PIN 27
+#define HUMIDIFIER_PIN 22   // TODO: Change GPIO pin if needed
 
 // ----- Actuators -----
-#define NUM_ACTUATORS 1
+#define NUM_ACTUATORS 1     // TODO: Check this value
 #define FAN_ID 0
 #define WATER_PUMP_ID 1
 #define LED_ID 2
+#define HUMIDIFIER_ID 3
 
 // ----- Sensors -----
 #define NUM_SENSORS 3

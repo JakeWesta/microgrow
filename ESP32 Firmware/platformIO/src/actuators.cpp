@@ -9,15 +9,21 @@ void writeFan(void *arg) {
     digitalWrite(FAN_PIN, pwm?HIGH:LOW);
 }
 
+void writeHumidifier(void *arg) {
+    uint8_t state = *((uint8_t*)arg);
+    digitalWrite(HUMIDIFIER_PIN, state?HIGH:LOW);       // TODO: Check if active high/low
+}
+
 void fillAutoCommand(int index, void *cmdData) {
     // Only handle fan for now
-    if (index != FAN_ID)
+    if (index != FAN_ID && index != HUMIDIFIER_ID) {
         return;
+    }
 
-    uint8_t *pwm = (uint8_t*)cmdData;
     float temp;
     float hum;
     float targetHumidity, targetTemp;
+
     // Read sensors safely
     if (xSemaphoreTake(mutex, pdMS_TO_TICKS(50)) == pdTRUE) {
         temp = shared.sensors[TEMPERATURE_ID].value;
@@ -25,22 +31,41 @@ void fillAutoCommand(int index, void *cmdData) {
         targetHumidity = shared.targets.humidity;
         targetTemp = shared.targets.temperature;
         xSemaphoreGive(mutex);
+
     } else {
         return;
     }
 
-    // Calculate PWM (no mutex needed here)
-    if (hum > 70.0f) {
-        *pwm = 255;
-    } 
-    else if (hum > 60.0f) {
-        *pwm = 128;
-    } 
-    else if (temp > 85.0f) {
-        *pwm = 200;
-    } 
-    else {
-        *pwm = 0;
+    // Fan logic
+    if (index == FAN_ID) {
+        uint8_t *pwm = (uint8_t*)cmdData;
+
+        // Calculate PWM (no mutex needed here)
+        if (hum > 70.0f) {
+            *pwm = 255;
+        } 
+        else if (hum > 60.0f) {
+            *pwm = 128;
+        } 
+        else if (temp > 85.0f) {
+            *pwm = 200;
+        } 
+        else {
+            *pwm = 0;
+        }
+    }
+
+    // Humidifier logic
+    else if (index == HUMIDIFIER_ID) {
+        uint8_t *state = (uint8_t*)cmdData;
+
+        // if (CONDITION_1) {       // TODO: Check how humidity is measured
+        //     *state = 1;
+        // }
+
+        // else if (CONDITION_2) {
+        //     *state = 0;
+        // }
     }
 }
 

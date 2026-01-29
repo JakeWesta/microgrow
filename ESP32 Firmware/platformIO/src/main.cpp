@@ -28,6 +28,7 @@ float readWaterLevel(void);
 void ledOn(void);
 void ledOff(void);
 void writeFan(void *);
+void writeHumidifier(void *);
 void pumpOn(void);
 void pumpOff(void);
 
@@ -41,6 +42,7 @@ CRGB leds[NUM_LEDS];
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT20 dht20;
 uint8_t fan_val;
+uint8_t humidifier_val;
 extern String habitatId;
 SemaphoreHandle_t led_mutex;
 bool led_state;
@@ -60,6 +62,11 @@ void initHardware() {
     pinMode(FAN_PIN, OUTPUT);
     digitalWrite(FAN_PIN, LOW);
     shared.actuators[FAN_ID] = {.writeFunc = writeFan, .cmdData = &fan_val, .manualOverride = false, .manualTriggered = false};
+
+    // Humidifier
+    pinMode(HUMIDIFIER_PIN, OUTPUT);
+    digitalWrite(HUMIDIFIER_PIN, LOW);    // TODO: Check if active high/low
+    shared.actuators[HUMIDIFIER_ID] = {.writeFunc = writeHumidifier, .cmdData = &humidifier_val, .manualOverride = false, .manualTriggered = false};
 
     // Water-level sensor
     pinMode(WATER_LEVEL_PIN, INPUT);
