@@ -1,151 +1,285 @@
 #include <Arduino.h>
-#include <DHT20.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_GrayOLED.h>
-#include <Adafruit_SPITFT.h>
-#include <Adafruit_SPITFT_Macros.h>
-#include <gfxfont.h>
-#include <Adafruit_ST7735.h>
-#include <Adafruit_ST7789.h>
-#include <Adafruit_ST7796S.h>
-#include <Adafruit_ST77xx.h>
-#include <FastLED.h>
-#include "defs.h"
-#include <Preferences.h>
-#include <SPI.h>
+#include "config/pins.h"
+#include "config/config.h"
+#include "hardware/sensors.h"
+#include "hardware/actuators.h"
+#include "hardware/display.h"
+#include "control/scheduler.h"
+#include "control/automation.h"
+#include "network/wifi_manager.h"
+#include "network/mqtt_client.h"
+#include "storage/persistence.h"
 
-// Forward declaration of tasks
-void mqttTask(void *);
-void actuatorTask(void *);
-void sensorTask(void *);
-void scheduleTask(void *);
+// Global pointers - initialized in setup()
+SensorManager *sensors = nullptr;
+ActuatorManager *actuators = nullptr;
+DisplayManager *display = nullptr;
+Scheduler *scheduler = nullptr;
+AutomationController *automation = nullptr;
+EspWiFiManager *wifiMgr = nullptr;
+PersistenceManager *storage = nullptr;
+MQTTClient *mqttClient = nullptr;
 
-// Forward declaration of sensor/actuator functions
-float readTemperature(void);
-float readHumidity(void);
-float readWaterLevel(void);
-void ledOn(void);
-void ledOff(void);
-void writeFan(void *);
-void pumpOn(void);
-void pumpOff(void);
+// ISR for WiFi reset button
+volatile bool resetWiFiRequested = false;
 
-Shared shared;
-SemaphoreHandle_t mutex;
-bool initialized;
-Preferences prefs;
-void IRAM_ATTR handleButton(); // ISR prototype
-volatile bool portalRequested = false;
-CRGB leds[NUM_LEDS];
-Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
-DHT20 dht20;
-uint8_t fan_val;
-extern String habitatId;
-SemaphoreHandle_t led_mutex;
-bool led_state;
-
-void initHardware() {
-    // Button interrupt for config portal
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleButton, FALLING);
-
-    // Motor
-    pinMode(MOTOR_PIN, OUTPUT);
-    digitalWrite(MOTOR_PIN, LOW);
-    shared.schedules[WATER_ID_S].actionStart = pumpOn;
-    shared.schedules[WATER_ID_S].actionEnd = pumpOff;
-
-    // Fan
-    pinMode(FAN_PIN, OUTPUT);
-    digitalWrite(FAN_PIN, LOW);
-    shared.actuators[FAN_ID] = {.writeFunc = writeFan, .cmdData = &fan_val, .manualOverride = false, .manualTriggered = false};
-
-    // Water-level sensor
-    pinMode(WATER_LEVEL_PIN, INPUT);
-    shared.sensors[WATER_LEVEL_ID].readFunc = readWaterLevel;
-
-    // LEDs
-    FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
-    FastLED.setBrightness(50);
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    shared.schedules[LED_ID_S].actionStart = ledOn;
-    shared.schedules[LED_ID_S].actionEnd = ledOff;
-
-
-    // TFT Display
-    tft.init(240, 320);
-    tft.setRotation(1);
-    tft.setCursor(5, 100);
-    tft.setTextColor(ST77XX_WHITE);
-    tft.setTextSize(5);
-    tft.println("MicroGrow");
-    tft.setTextSize(1);
-    tft.println();
-    tft.println("Initializing...");
-    tft.fillScreen(ST77XX_BLACK);
-
-    // Temperature and humidity sensors
-    Wire.begin();
-    dht20.begin();
-    shared.sensors[TEMPERATURE_ID].readFunc = readTemperature;
-    shared.sensors[HUMIDITY_ID].readFunc = readHumidity;
+void IRAM_ATTR handleResetButton()
+{
+    resetWiFiRequested = true;
 }
 
+// FreeRTOS Tasks
+void sensorTask(void *param);
+void actuatorTask(void *param);
+void scheduleTask(void *param);
+void networkTask(void *param);
 
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
+void setup()
+{
+    Serial.begin(SERIAL_BAUD);
+    delay(1000);
+    Serial.println("\n\n=== MicroGrow Starting ===");
 
-  initHardware();
+    // Initialize objects in controlled order
+    Serial.println("1. Creating display...");
+    display = new DisplayManager();
+    display->begin();
+    display->showBoot();
+    yield();
 
-  // Create mutexes
-  mutex = xSemaphoreCreateMutex();
-  led_mutex = xSemaphoreCreateMutex();
+    Serial.println("2. Creating sensors...");
+    sensors = new SensorManager();
+    sensors->begin();
+    yield();
 
-  prefs.begin("microgrow", true);
+    Serial.println("3. Creating actuators...");
+    actuators = new ActuatorManager();
+    actuators->begin();
+    yield();
 
-  initialized = prefs.getBool("init", false);
+    Serial.println("4. Creating scheduler...");
+    scheduler = new Scheduler();
+    yield();
 
-  if (!initialized) {
-      Serial.println("NVS empty");
+    Serial.println("5. Creating automation...");
+    automation = new AutomationController(*sensors, *actuators);
+    yield();
 
-      shared.targets_ready = false;
-      shared.schedules_ready = false;
+    Serial.println("6. Creating storage...");
+    storage = new PersistenceManager();
+    yield();
 
-  } else {
-      Serial.println("NVS loaded");
+    Serial.println("7. Creating WiFi manager...");
+    wifiMgr = new EspWiFiManager();
+    yield();
 
-      habitatId = prefs.getString("habitatId", "");
-      shared.targets.humidity    = prefs.getFloat("tHumidity", 60.0f);
-      shared.targets.temperature = prefs.getFloat("tTemp", 75.0f);
+    // Setup WiFi reset button
+    pinMode(PIN_BUTTON, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(PIN_BUTTON), handleResetButton, FALLING);
 
-      shared.schedules[LED_ID_S].startSec   = prefs.getULong("light_start", 0);
-      shared.schedules[LED_ID_S].durationSec    = prefs.getULong("light_dur",   0);
-      shared.schedules[LED_ID_S].intervalSec    = prefs.getULong("light_int",   0);
+    Serial.println("8. Creating MQTT client...");
+    mqttClient = &MQTTClient::getInstance(wifiMgr->getDeviceId());
+    yield();
 
-      shared.schedules[WATER_ID_S].startSec   = prefs.getULong("water_start", 0);
-      shared.schedules[WATER_ID_S].durationSec    = prefs.getULong("water_dur",   0);
-      shared.schedules[WATER_ID_S].intervalSec    = prefs.getULong("water_int",   0);
+    // Wire MQTT dependencies
+    mqttClient->setActuators(actuators);
+    mqttClient->setScheduler(scheduler);
+    mqttClient->setAutomation(automation);
 
-      shared.targets_ready = true;
-      shared.schedules_ready = true;
-  }
+    if (storage->isConfigured())
+    {
+        Serial.println("Loading saved configuration...");
 
-  prefs.end();
+        DeviceConfig config = storage->loadConfig();
 
-  // Create tasks
-  xTaskCreatePinnedToCore(sensorTask, "Sensor", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(mqttTask, "MQTT", 8192, NULL, 2, NULL, 1);
-  xTaskCreatePinnedToCore(actuatorTask, "Actuator", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(scheduleTask, "Schedule", 4096, NULL, 1, NULL, 1);
+        automation->setTargets(config.targetTemp, config.targetHumidity);
+        automation->enable();
+
+        scheduler->getLightSchedule().setTiming(
+            Timing(config.lightStartSec,
+                   config.lightDurationSec,
+                   config.lightIntervalSec));
+        scheduler->getLightSchedule().setCallbacks(
+            [=]()
+            { actuators->getLEDs().setColor(255, 255, 255); },
+            [=]()
+            { actuators->getLEDs().off(); });
+        scheduler->getLightSchedule().enable();
+
+        scheduler->getWaterSchedule().setTiming(
+            Timing(config.waterStartSec,
+                   config.waterDurationSec,
+                   config.waterIntervalSec));
+        scheduler->getWaterSchedule().setCallbacks(
+            [=]()
+            { actuators->getPump().on(); },
+            [=]()
+            { actuators->getPump().off(); });
+        scheduler->getWaterSchedule().enable();
+
+        display->showDeviceInfo(config.habitatId, config.greenType);
+    }
+    else
+    {
+        Serial.println("No saved configuration - awaiting setup");
+    }
+
+    // Initialize WiFi
+    Serial.println("9. Starting WiFi...");
+    if (!wifiMgr->begin())
+    {
+        Serial.println("Starting WiFi configuration portal...");
+        display->showWiFiSetup(wifiMgr->getDeviceId());
+        wifiMgr->startConfigPortal();
+    }
+    yield();
+
+    // Initialize MQTT
+    Serial.println("10. Starting MQTT...");
+    mqttClient->begin();
+    yield();
+
+    // Start FreeRTOS tasks
+    Serial.println("11. Creating FreeRTOS tasks...");
+    xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(actuatorTask, "Actuator", 8192, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
+
+    Serial.println("\n=== MicroGrow Ready ===\n");
 }
 
-void loop() {
-  vTaskDelay(portMAX_DELAY);  // nothing runs here
+void loop()
+{
+    if (resetWiFiRequested)
+    {
+        resetWiFiRequested = false;
+        Serial.println("WiFi reset requested");
+        display->showWiFiSetup(wifiMgr->getDeviceId());
+        wifiMgr->resetCredentials();
+    }
+
+    vTaskDelay(portMAX_DELAY);
 }
 
-// ISR sets a flag to trigger the portal
-void IRAM_ATTR handleButton() {
-  portalRequested = true;
+// ============================================================================
+// FreeRTOS Tasks
+// ============================================================================
+
+void sensorTask(void *param)
+{
+    TickType_t lastWakeTime = xTaskGetTickCount();
+
+    while (true)
+    {
+        SensorReadings readings = sensors->read();
+
+        if (readings.valid)
+        {
+            display->showSensorData(
+                readings.temperature,
+                readings.humidity,
+                readings.waterLevelLow);
+        }
+
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));
+    }
+}
+
+void actuatorTask(void *param)
+{
+    TickType_t lastWakeTime = xTaskGetTickCount();
+
+    while (true)
+    {
+        automation->update();
+        actuators->updateAll();
+
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(ACTUATOR_UPDATE_INTERVAL_MS));
+    }
+}
+
+void scheduleTask(void *param)
+{
+    TickType_t lastWakeTime = xTaskGetTickCount();
+    int retryCount = 0;
+    const int maxRetries = 60; // Wait up to 60 seconds for time sync
+
+    while (!Scheduler::isTimeValid() && retryCount < maxRetries)
+    {
+        Serial.println("Waiting for NTP time sync...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        retryCount++;
+    }
+
+    if (!Scheduler::isTimeValid())
+    {
+        Serial.println("WARNING: Scheduler starting without valid time");
+    }
+    else
+    {
+        Serial.println("Scheduler started with valid time");
+    }
+
+    while (true)
+    {
+        scheduler->update();
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SCHEDULE_CHECK_INTERVAL_MS));
+    }
+}
+
+void networkTask(void *param)
+{
+    TickType_t lastWakeTime = xTaskGetTickCount();
+    TickType_t lastPublish = 0;
+
+    configTime(TIMEZONE_OFFSET_S, DST_OFFSET_S, NTP_SERVER_1, NTP_SERVER_2);
+
+    while (true)
+    {
+        if (!wifiMgr->isConnected())
+        {
+            Serial.println("WiFi disconnected, attempting reconnect...");
+            display->setWiFiStatus(false);
+            wifiMgr->reconnect();
+        }
+        else
+        {
+            display->setWiFiStatus(true);
+        }
+
+        if (wifiMgr->isConnected())
+        {
+            if (!mqttClient->isConnected())
+            {
+                display->setMQTTStatus(false);
+                mqttClient->connect();
+            }
+            else
+            {
+                display->setMQTTStatus(true);
+                mqttClient->loop();
+
+                if (mqttClient->isInitialized())
+                {
+                    TickType_t now = xTaskGetTickCount();
+                    if (now - lastPublish > pdMS_TO_TICKS(MQTT_PUBLISH_INTERVAL_MS))
+                    {
+                        SensorReadings readings = sensors->getLastReadings();
+                        if (readings.valid)
+                        {
+                            mqttClient->publishSensorData(
+                                readings.temperature,
+                                readings.humidity,
+                                readings.waterLevelLow,
+                                actuators->getLEDs().isOn());
+                            lastPublish = now;
+                        }
+                    }
+                }
+            }
+        }
+
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(100));
+    }
 }
