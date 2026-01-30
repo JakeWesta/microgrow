@@ -2,3 +2,5 @@
 examples where ESP32 runs SoftAP and serves HTTP endpoints. - Reviewed how to fetch device ID via local HTTP from Flutter; found discussions about Flutter http.post not working if the app isn’t properly connected to the ESP32 network; needs testing of direct HttpClient approach. - Explored security via mTLS and ACL scripts for the broker.
 
 1/28/2026 ~2hrs - Researched backend ACL best practices and what data needs to be stored for Mosquitto user/topic permissions; found distributed patterns rather than dynamic topic creation at runtime from devices. Context from IoT discussions suggests creating ACL entries post-pairing. - Searched for relevant Flutter + MQTT libraries and patterns for live data feeds; reviewed example subscription logic and how to handle topic events in mobile code.
+
+1/30/2026 ~1.5 hrs - Assist Matt with testing mister. Testing code on our real hardware
