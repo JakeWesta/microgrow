@@ -7,3 +7,6 @@ Looked into more portable power solutions. Most are expensive, requires some tho
 1/27/2026 - 1-2hrs
 Measuring power output of full load of board to find power constraints for portable battery. Somewhat successful, but didnt have a data cable, 
   only a power cable, so couldn't turn on fan or lights. But we know now the floor to turn it on with external power is roughly 5V/.3A
+
+1/30/2026
+Redesign of PCB to accomodate mister, and added busses to have the capability of new possible components.
