@@ -61,6 +61,7 @@ class AddHabitatScreen extends StatefulWidget {
 class _AddHabitatScreenState extends State<AddHabitatScreen> {
   final formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
+  final idController = TextEditingController();
   String? selectedGreen;
 
   final now = DateTime.now();
@@ -161,6 +162,20 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                   },
                 ),
                 const SizedBox(height: 30),
+                TextFormField(
+                  controller: idController,
+                  decoration: const InputDecoration(
+                    labelText: "Habitat Unique ID",
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter ID shown on the Habitat's screen";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 30),
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -170,11 +185,11 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                     ),
                     onPressed: () async {
                       if (formKey.currentState!.validate()) {
-                        final id = const Uuid().v4();
+                        final id = idController.text.trim();
                         final config = greenOptions[selectedGreen]!;
 
                         final newHabitat = Habitat(
-                          id: id,
+                          id: idController.text.trim(),
                           name: nameController.text.trim(),
                           greenType: config.greenType,
                           tempTarget: config.tempTarget,

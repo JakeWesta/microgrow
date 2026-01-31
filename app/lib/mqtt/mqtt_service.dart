@@ -56,7 +56,6 @@ class MqttService {
     final topic = 'microgrow/init';
 
     final msg = jsonEncode({
-      'id': habitatId,
       'green': greenType,
       'schedule': schedule
     });

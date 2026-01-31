@@ -44,6 +44,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<MyAppState>();
     final habitats = appState.getHabitats;
+    final showDot = appState.showHarvestNotification;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -63,6 +65,67 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         centerTitle: false,
+         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications, size: 32, color: Colors.white),
+                onPressed: () {
+                  final ready = appState.harvestReadyHabitats;
+
+                  if (ready.isEmpty) return;
+
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text("Ready to Harvest"),
+                      content: SizedBox(
+                        width: double.maxFinite,
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: ready
+                              .map(
+                                (h) => Card(
+                                  child: ListTile(
+                                    leading: const Icon(Icons.eco, color: Colors.green),
+                                    title: Text(h.name),
+                                    subtitle: Text(h.greenType),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            appState.acknowledgeHarvestNotification(); 
+                          },
+                          child: const Text("OK"),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              if (showDot)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Color.fromARGB(255, 82, 175, 88),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
 
       body: SafeArea(
