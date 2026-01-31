@@ -28,13 +28,14 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       waterStartSec: fields[8] as int,
       waterDurationSec: fields[9] as int,
       waterIntervalSec: fields[10] as int,
+      createdAt: fields[11] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Habitat obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +57,9 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       ..writeByte(9)
       ..write(obj.waterDurationSec)
       ..writeByte(10)
-      ..write(obj.waterIntervalSec);
+      ..write(obj.waterIntervalSec)
+      ..writeByte(11)
+      ..write(obj.createdAt);
   }
 
   @override

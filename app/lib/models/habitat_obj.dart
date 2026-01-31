@@ -40,6 +40,9 @@ class Habitat extends HiveObject {
   @HiveField(10)
   int waterIntervalSec;
 
+  @HiveField(11)
+  final DateTime createdAt;
+
   Habitat({
     required this.id,
     required this.name,
@@ -51,6 +54,7 @@ class Habitat extends HiveObject {
     required this.lightIntervalSec,
     required this.waterStartSec,
     required this.waterDurationSec,
-    required this.waterIntervalSec
-  });
+    required this.waterIntervalSec,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 }

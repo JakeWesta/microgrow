@@ -42,7 +42,7 @@ class MqttService {
       throw Exception('MQTT not connected. CONNACK=$rc');
     }
 
-    client.subscribe('microgrow/init', MqttQos.atLeastOnce);
+    //client.subscribe('microgrow/init', MqttQos.atLeastOnce);
 
     return client;
 
@@ -53,7 +53,7 @@ class MqttService {
     required HabitatConfig config,
   }) async {
     final client = await connect();
-    final topic = 'microgrow/init';
+    final topic = 'microgrow/$habitatId/init';
 
     final msg2 = jsonEncode({
       "light": {
@@ -69,7 +69,6 @@ class MqttService {
     });
 
     final msg1 = jsonEncode({
-      "id": habitatId,
       "greenType": config.greenType,
       "target": {
         "temp": config.tempTarget,
