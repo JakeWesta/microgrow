@@ -266,6 +266,7 @@ void MQTTClient::handleOverride(JsonDocument &doc)
 #define FAN_ID 0
 #define WATER_PUMP_ID 1
 #define LED_ID 2
+#define MISTER_ID 3
 
     switch (actuatorId)
     {
@@ -325,6 +326,19 @@ void MQTTClient::handleOverride(JsonDocument &doc)
             }
         }
         break;
+    }
+    case MISTER_ID:
+    {
+        Mister mister = actuators->getMister();
+        if (enable)
+        {
+            uint8_t value = doc["value"].as<uint8_t>();
+            mister.setManualOverride(true, value);
+        }
+        else
+        {
+            mister.setManualOverride(false);
+        }
     }
 
     default:

@@ -37,5 +37,4 @@ private:
     uint32_t lastReconnectAttempt;
 
     void generateDeviceId();
-    void setupPortalCallbacks();
 };
