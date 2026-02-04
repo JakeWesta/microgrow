@@ -107,7 +107,7 @@ class MqttService {
     final client = await connect();
     final topic = "microgrow/$habitatId/override";
 
-    final Map<String, int> options = {"water": 1, "light": 2, "fan": 0};
+    final Map<String, int> options = {"water": 1, "light": 2, "fan": 0, "mister": 3};
 
     final msg = jsonEncode({
       'actuator': options[actuatorName],
