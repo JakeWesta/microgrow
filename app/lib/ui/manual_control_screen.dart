@@ -17,6 +17,7 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
   bool lightOn = false;
   bool fanOn = false;
   bool waterFlashing = false;
+  bool misterOn = false;
 
   Color selectedColor = Colors.blue;
 
@@ -226,6 +227,11 @@ Widget lightColorCard() {
           toggleCard('Fan', fanOn, (val) {
             setState(() => fanOn = val);
             sendOverride('fan', val ? 1 : 0);
+          }),
+
+          toggleCard('Mister', misterOn, (val) {
+            setState(() => misterOn = val);
+            sendOverride('mister', val ? 1 : 0);
           }),
           
         ],
