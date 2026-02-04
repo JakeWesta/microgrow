@@ -22,7 +22,7 @@ public:
     // Screen updates
     void showBoot();
     void showWiFiSetup(const String &deviceId);
-    void showDeviceInfo(const String &habitatId, const String &greenType);
+    void showDeviceInfo(const String &id, const String &greenType);
     void showQRCode(const String &data); // For easy pairing
     void showSensorData(float temp, float humidity, bool waterLow);
     void showError(const String &message);

@@ -89,7 +89,7 @@ void DisplayManager::showWiFiSetup(const String &deviceId)
     tft.println(deviceId);
 }
 
-void DisplayManager::showDeviceInfo(const String &habitatId, const String &greenType)
+void DisplayManager::showDeviceInfo(const String &id, const String &greenType)
 {
     state = DisplayState::DEVICE_INFO;
     drawHeader("MicroGrow", ST77XX_GREEN);
@@ -98,7 +98,7 @@ void DisplayManager::showDeviceInfo(const String &habitatId, const String &green
     tft.setTextColor(ST77XX_WHITE);
     tft.setCursor(5, 90);
     tft.print("ID: ");
-    tft.println(habitatId);
+    tft.println(id);
 
     tft.setCursor(5, 130);
     tft.print("Type: ");

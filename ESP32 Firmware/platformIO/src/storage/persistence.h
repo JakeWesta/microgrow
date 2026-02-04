@@ -5,7 +5,6 @@
 
 struct DeviceConfig
 {
-    String habitatId;
     String greenType;
     float targetTemp;
     float targetHumidity;
@@ -40,7 +39,7 @@ public:
     void saveTargets(float temp, float humidity);
     void saveLightSchedule(uint32_t start, uint32_t duration, uint32_t interval);
     void saveWaterSchedule(uint32_t start, uint32_t duration, uint32_t interval);
-    void saveHabitatInfo(const String &id, const String &type);
+    void saveHabitatInfo(const String &type);
 
 private:
     Preferences prefs;
@@ -48,7 +47,6 @@ private:
 
     // Keys
     static constexpr const char *KEY_INIT = "init";
-    static constexpr const char *KEY_HABITAT_ID = "habitatId";
     static constexpr const char *KEY_GREEN_TYPE = "greenType";
     static constexpr const char *KEY_TARGET_TEMP = "tTemp";
     static constexpr const char *KEY_TARGET_HUM = "tHumidity";

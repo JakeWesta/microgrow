@@ -14,7 +14,6 @@ void PersistenceManager::saveConfig(const DeviceConfig &config)
     prefs.begin(NAMESPACE, false); // read-write
 
     prefs.putBool(KEY_INIT, true);
-    prefs.putString(KEY_HABITAT_ID, config.habitatId);
     prefs.putString(KEY_GREEN_TYPE, config.greenType);
     prefs.putFloat(KEY_TARGET_TEMP, config.targetTemp);
     prefs.putFloat(KEY_TARGET_HUM, config.targetHumidity);
@@ -45,7 +44,6 @@ DeviceConfig PersistenceManager::loadConfig()
         return config;
     }
 
-    config.habitatId = prefs.getString(KEY_HABITAT_ID, "");
     config.greenType = prefs.getString(KEY_GREEN_TYPE, "");
     config.targetTemp = prefs.getFloat(KEY_TARGET_TEMP, 75.0f);
     config.targetHumidity = prefs.getFloat(KEY_TARGET_HUM, 60.0f);
@@ -63,7 +61,7 @@ DeviceConfig PersistenceManager::loadConfig()
     prefs.end();
 
     Serial.println("Configuration loaded from NVS");
-    Serial.printf("  Habitat: %s (%s)\n", config.habitatId.c_str(), config.greenType.c_str());
+    Serial.printf("  Green Type: %s\n", config.greenType.c_str());
     Serial.printf("  Targets: Temp=%.1fF, Humidity=%.1f%%\n",
                   config.targetTemp, config.targetHumidity);
 
@@ -109,11 +107,10 @@ void PersistenceManager::saveWaterSchedule(uint32_t start, uint32_t duration, ui
                   start, duration, interval);
 }
 
-void PersistenceManager::saveHabitatInfo(const String &id, const String &type)
+void PersistenceManager::saveHabitatInfo(const String &type)
 {
     prefs.begin(NAMESPACE, false);
-    prefs.putString(KEY_HABITAT_ID, id);
     prefs.putString(KEY_GREEN_TYPE, type);
     prefs.end();
-    Serial.printf("Habitat info saved: %s (%s)\n", id.c_str(), type.c_str());
+    Serial.printf("Habitat info saved: %s\n", type.c_str());
 }

@@ -38,8 +38,6 @@ public:
 
     // Configuration state
     bool isInitialized() const { return initState == InitState::COMPLETE; }
-    bool hasHabitatId() const { return !habitatId.isEmpty(); }
-    const String &getHabitatId() const { return habitatId; }
     const String &getGreenType() const { return greenType; }
 
     // Set external dependencies
@@ -55,7 +53,6 @@ private:
     WiFiClient espClient;
     PubSubClient client;
     String deviceId;
-    String habitatId;
     String greenType;
 
     InitState initState;

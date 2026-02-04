@@ -110,12 +110,12 @@ void MQTTClient::subscribeToHabitatTopics()
 
 bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow, bool lightOn)
 {
-    if (!isConnected() || habitatId.isEmpty())
+    if (!isConnected())
     {
         return false;
     }
 
-    String base = "microgrow/" + habitatId + "/";
+    String base = "microgrow/" + deviceId + "/";
 
     bool success = true;
     success &= client.publish((base + "temp").c_str(), String(temp, 1).c_str());
@@ -128,12 +128,12 @@ bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow, bo
 
 bool MQTTClient::publishStatus(const String &message)
 {
-    if (!isConnected() || habitatId.isEmpty())
+    if (!isConnected())
     {
         return false;
     }
 
-    String topic = "microgrow/" + habitatId + "/status";
+    String topic = "microgrow/" + deviceId + "/status";
     return client.publish(topic.c_str(), message.c_str());
 }
 
@@ -169,7 +169,7 @@ void MQTTClient::messageCallback(char *topic, byte *payload, unsigned int length
     String topicStr = String(topic);
 
     // Handle init messages
-    if (topicStr == "microgrow/init")
+    if (topicStr.endsWith("/init"))
     {
         handleInit(doc);
         return;
@@ -185,17 +185,15 @@ void MQTTClient::messageCallback(char *topic, byte *payload, unsigned int length
 
 void MQTTClient::handleInit(JsonDocument &doc)
 {
-    // Check if this is habitat ID message
-    if (doc["id"].is<String>())
+    // Check if this is a greenType message
+    if (doc["greenType"].is<String>())
     {
-        habitatId = doc["id"].as<String>();
         greenType = doc["greenType"].as<String>();
 
         float targetTemp = doc["target"]["temp"].as<float>();
         float targetHum = doc["target"]["humidity"].as<float>();
 
-        Serial.printf("Received habitat ID: %s (%s)\n",
-                      habitatId.c_str(), greenType.c_str());
+        Serial.printf("Received greenType: %s\n", greenType.c_str());
 
         // Set automation targets
         if (automation)
@@ -206,7 +204,7 @@ void MQTTClient::handleInit(JsonDocument &doc)
 
         // Save to NVS
         PersistenceManager storage;
-        storage.saveHabitatInfo(habitatId, greenType);
+        storage.saveHabitatInfo(greenType);
         storage.saveTargets(targetTemp, targetHum);
 
         initState = InitState::WAITING_FOR_SCHEDULE;
@@ -243,7 +241,7 @@ void MQTTClient::handleInit(JsonDocument &doc)
         initState = InitState::COMPLETE;
 
         // Configuration complete
-        client.unsubscribe("microgrow/init");
+        client.unsubscribe(("microgrow/" + deviceId + "/init").c_str());
         subscribeToHabitatTopics();
 
         Serial.println("Configuration complete!");
@@ -353,7 +351,6 @@ void MQTTClient::saveConfiguration()
     PersistenceManager storage;
 
     DeviceConfig config;
-    config.habitatId = habitatId;
     config.greenType = greenType;
 
     if (automation)

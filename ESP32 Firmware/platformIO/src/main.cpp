@@ -117,7 +117,7 @@ void setup()
             { actuators->getPump().off(); });
         scheduler->getWaterSchedule().enable();
 
-        display->showDeviceInfo(config.habitatId, config.greenType);
+        display->showDeviceInfo(wifiMgr->getDeviceId(), config.greenType);
     }
     else
     {
