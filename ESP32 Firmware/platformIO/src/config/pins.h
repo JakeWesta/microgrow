@@ -15,7 +15,7 @@
 // Sensors
 #define PIN_WATER_LEVEL 26
 
-// TFT Display (SPI)
+// TFT Display
 #define PIN_TFT_CS 5
 #define PIN_TFT_DC 16
 #define PIN_TFT_RST 17

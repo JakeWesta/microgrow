@@ -3,7 +3,7 @@
 #include "../config/config.h"
 
 DisplayManager::DisplayManager()
-    : tft(PIN_TFT_CS, PIN_TFT_DC, PIN_TFT_RST), state(DisplayState::BOOT), wifiConnected(false), mqttConnected(false), lastTemp(0), lastHumidity(0), lastWaterLow(false)
+    : tft(&SPI, PIN_TFT_CS, PIN_TFT_DC, PIN_TFT_RST), state(DisplayState::BOOT), wifiConnected(false), mqttConnected(false), lastTemp(0), lastHumidity(0), lastWaterLow(false)
 {
 }
 
@@ -12,9 +12,12 @@ bool DisplayManager::begin()
     pinMode(PIN_TFT_CS, OUTPUT);
     pinMode(PIN_TFT_DC, OUTPUT);
     pinMode(PIN_TFT_RST, OUTPUT);
+    SPI.begin(SCK, -1, MOSI, 5);
+    delay(10);
     tft.init(TFT_WIDTH, TFT_HEIGHT);
+    delay(10);
     tft.setRotation(TFT_ROTATION);
-    tft.fillScreen(ST77XX_WHITE);
+    tft.fillScreen(ST77XX_BLACK);
     Serial.println("Display initialized");
     return true;
 }

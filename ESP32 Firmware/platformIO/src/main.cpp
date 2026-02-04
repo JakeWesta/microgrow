@@ -126,6 +126,7 @@ void setup()
 
     // Initialize WiFi
     Serial.println("9. Starting WiFi...");
+    Serial.printf("Device ID: %s\n", wifiMgr->getDeviceId().c_str());
     if (!wifiMgr->begin())
     {
         Serial.println("Starting WiFi configuration portal...");

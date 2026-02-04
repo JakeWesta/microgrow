@@ -96,13 +96,14 @@ void MQTTClient::loop()
 
 void MQTTClient::subscribeToInitTopics()
 {
-    client.subscribe("microgrow/init");
-    Serial.println("Subscribed to: microgrow/init");
+    String initTopic = "microgrow/" + deviceId + "/init";
+    client.subscribe(initTopic.c_str());
+    Serial.printf("Subscribed to: %s\n", initTopic.c_str());
 }
 
 void MQTTClient::subscribeToHabitatTopics()
 {
-    String overrideTopic = "microgrow/" + habitatId + "/override";
+    String overrideTopic = "microgrow/" + deviceId + "/override";
     client.subscribe(overrideTopic.c_str());
     Serial.printf("Subscribed to: %s\n", overrideTopic.c_str());
 }
