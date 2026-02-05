@@ -39,28 +39,29 @@ void AutomationController::controlFan(const SensorReadings& readings) {
     
     // Skip if manual override is active
     if (fan.isManualOverride()) {
-        // Let manual logic own the output
         return;
     }
     
-    // Apply hysteresis to prevent rapid cycling
     uint32_t now = millis();
     if (now - lastFanChange < CONTROL_HYSTERESIS_MS) {
         return;
     }
     
-    uint8_t pwm = FAN_PWM_OFF;
-
-    if (readings.humidity > targets.humidity) {
-        pwm = FAN_PWM_HIGH;
+    // Turn on fan if temperature or humidity is too high
+    if (readings.temperature > targets.temperature || 
+        readings.humidity > targets.humidity) {
+        if (!fan.isRunning()) {
+            fan.on();
+            lastFanChange = now;
+        }
+    } else if (readings.temperature < targets.temperature - 2.0f && 
+               readings.humidity < targets.humidity - 5.0f) {
+        // Turn off fan when both are sufficiently low
+        if (fan.isRunning()) {
+            fan.off();
+            lastFanChange = now;
+        }
     }
-
-    if (readings.temperature > targets.temperature) {
-        pwm = FAN_PWM_HIGH;
-    }
-    
-    fan.write(pwm);
-    lastFanChange = now;
 }
 
 

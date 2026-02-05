@@ -9,7 +9,7 @@ class Actuator
 public:
     virtual ~Actuator() = default;
 
-    virtual void write(uint8_t value) = 0;
+    virtual void on() = 0;
     virtual void off() = 0;
     virtual const char *getName() const = 0;
 
@@ -31,13 +31,14 @@ class Fan : public Actuator
 {
 public:
     Fan(uint8_t pin);
-    void write(uint8_t pwm) override;
+    void on();
     void off() override;
     const char *getName() const override { return "Fan"; }
+    bool isRunning() const { return running; }
 
 private:
     uint8_t pin;
-    uint8_t currentPWM = 0;
+    bool running = false;
 };
 
 // Water pump (on/off)
@@ -45,11 +46,10 @@ class WaterPump : public Actuator
 {
 public:
     WaterPump(uint8_t pin);
-    void write(uint8_t value) override; // 0=off, anything else=on
+    void on() override;
     void off() override;
     const char *getName() const override { return "Water Pump"; }
 
-    void on();
     bool isRunning() const { return running; }
 
 private:
@@ -62,11 +62,10 @@ class Mister : public Actuator
 {
 public:
     Mister(uint8_t pin);
-    void write(uint8_t value) override;
+    void on() override;
     void off() override;
     const char *getName() const override { return "Mister"; }
 
-    void on();
     bool isRunning() const { return running; }
 
 private:
@@ -80,7 +79,8 @@ class LEDStrip : public Actuator
 public:
     LEDStrip(uint8_t pin, uint16_t numLeds);
 
-    void write(uint8_t brightness) override; // 0-255
+    void write(uint8_t brightness); // 0-255
+    void on() override;
     void off() override;
     const char *getName() const override { return "LED Strip"; }
 

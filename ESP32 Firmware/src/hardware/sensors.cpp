@@ -15,20 +15,6 @@ bool SensorManager::begin()
     pinMode(PIN_WATER_LEVEL, INPUT);
     Serial.println("Sensors initialized");
     
-    // Try an initial read to verify DHT20 is working
-    delay(100);
-    int status = dht20.read();
-    if (status == DHT20_OK)
-    {
-        Serial.println("DHT20 initial read successful");
-        lastDHT20Valid = true;
-    }
-    else
-    {
-        Serial.printf("DHT20 initial read failed: %d\n", status);
-        lastDHT20Valid = false;
-    }
-    
     return true;
 }
 
@@ -46,7 +32,6 @@ float SensorManager::readHumidity()
 {
     if (!readDHT20())
     {
-        Serial.println("Humidity read failed - DHT20 not valid");
         return NAN;
     }
     float humid = dht20.getHumidity();
@@ -75,7 +60,6 @@ bool SensorManager::readDHT20()
     
     if (status != DHT20_OK)
     {
-        Serial.printf("DHT20 read failed: %d\n", status);
         lastDHT20Valid = false;
         return false;
     }

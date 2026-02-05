@@ -271,7 +271,10 @@ void MQTTClient::handleOverride(JsonDocument &doc) {
       if (enable) {
           uint8_t value = doc["value"] | 255;   // default full power if not provided
           fan.setManualOverride(true, value);
-          fan.write(value); // drive immediately
+          if (value)
+              fan.on();
+          else
+              fan.off();
       } else {
           fan.setManualOverride(false);
           // Automation will take over on next update()
@@ -318,7 +321,10 @@ void MQTTClient::handleOverride(JsonDocument &doc) {
       if (enable) {
           uint8_t value = doc["value"] | 1;  // non-zero means ON
           mister.setManualOverride(true, value);
-          mister.write(value);  // turn ON/OFF immediately
+          if (value)
+              mister.on();
+          else
+              mister.off();
       } else {
           mister.setManualOverride(false);
           // Automation will handle it next cycle

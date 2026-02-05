@@ -31,22 +31,24 @@ Fan::Fan(uint8_t pin) : pin(pin)
     digitalWrite(pin, LOW);
 }
 
-void Fan::write(uint8_t pwm)
+void Fan::on()
 {
-    if (pwm != currentPWM)
+    if (!running)
     {
-        currentPWM = pwm;
-        digitalWrite(pin, pwm > 0 ? HIGH : LOW);
-
-        Serial.printf("Fan: PWM=%d%s\n",
-                      pwm,
-                      manualOverride ? " (manual)" : "");
+        digitalWrite(pin, HIGH);
+        running = true;
+        Serial.println("Fan: ON");
     }
 }
 
 void Fan::off()
 {
-    write(0);
+    if (running)
+    {
+        digitalWrite(pin, LOW);
+        running = false;
+        Serial.println("Fan: OFF");
+    }
 }
 
 // ============================================================================
@@ -57,23 +59,6 @@ WaterPump::WaterPump(uint8_t pin) : pin(pin)
 {
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
-}
-
-void WaterPump::write(uint8_t value)
-{
-    if (manualOverride)
-    {
-        value = manualValue;
-    }
-
-    if (value > 0)
-    {
-        on();
-    }
-    else
-    {
-        off();
-    }
 }
 
 void WaterPump::on()
@@ -104,18 +89,6 @@ Mister::Mister(uint8_t pin) : pin(pin)
 {
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
-}
-
-void Mister::write(uint8_t value)
-{
-    Serial.printf("Mister: write(%d)%s\n",
-                  value,
-                  manualOverride ? " (manual)" : "");
-
-    if (value != 0)
-        on();
-    else
-        off();
 }
 
 void Mister::on()
@@ -163,6 +136,11 @@ void LEDStrip::write(uint8_t brightness)
     {
         off();
     }
+}
+
+void LEDStrip::on()
+{
+    setColor(currentColor);
 }
 
 void LEDStrip::setColor(uint8_t r, uint8_t g, uint8_t b)
