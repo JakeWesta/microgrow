@@ -8,12 +8,12 @@
 #define NUM_LEDS 256
 
 // Actuators
-#define PIN_WATER_PUMP 14
-#define PIN_FAN 27
-#define PIN_MISTER 13 // TODO get the correct pin for mister
+#define PIN_WATER_PUMP 32
+#define PIN_FAN 26
+#define PIN_MISTER 27
 
 // Sensors
-#define PIN_WATER_LEVEL 26
+#define PIN_WATER_LEVEL 14
 
 // TFT Display
 #define PIN_TFT_CS 5

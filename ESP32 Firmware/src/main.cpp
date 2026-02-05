@@ -194,8 +194,6 @@ void actuatorTask(void *param)
     while (true)
     {
         automation->update();
-        actuators->updateAll();
-
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(ACTUATOR_UPDATE_INTERVAL_MS));
     }
 }

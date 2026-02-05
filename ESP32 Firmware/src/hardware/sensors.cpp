@@ -36,11 +36,9 @@ float SensorManager::readTemperature()
 {
     if (!readDHT20())
     {
-        Serial.println("Temperature read failed - DHT20 not valid");
         return NAN;
     }
     float temp = dht20.getTemperature() * 1.8f + 32.0f; // Convert to Fahrenheit
-    Serial.printf("Temperature: %.1fF\n", temp);
     return temp;
 }
 
@@ -52,7 +50,6 @@ float SensorManager::readHumidity()
         return NAN;
     }
     float humid = dht20.getHumidity();
-    Serial.printf("Humidity: %.1f%%\n", humid);
     return humid;
 }
 
@@ -60,7 +57,6 @@ bool SensorManager::readWaterLevel()
 {
     // Returns true if water level is LOW (needs refill)
     bool isLow = digitalRead(PIN_WATER_LEVEL) == HIGH;
-    Serial.printf("Water level: %s\n", isLow ? "LOW" : "OK");
     return isLow;
 }
 
@@ -71,12 +67,9 @@ bool SensorManager::readDHT20()
     // Don't read DHT20 more than once per 2 seconds
     if (now - lastReadTime < 2000)
     {
-        Serial.printf("DHT20 cache hit (age: %lu ms) - valid: %s\n", 
-                     now - lastReadTime, lastDHT20Valid ? "true" : "false");
         return lastDHT20Valid;
     }
     
-    Serial.println("Reading DHT20...");
     lastReadTime = now;
     int status = dht20.read();
     
@@ -87,14 +80,12 @@ bool SensorManager::readDHT20()
         return false;
     }
     
-    Serial.println("DHT20 read successful");
     lastDHT20Valid = true;
     return true;
 }
 
 SensorReadings SensorManager::read()
 {
-    Serial.println("=== Reading all sensors ===");
     SensorReadings readings;
     readings.timestamp = millis();
     readings.temperature = readTemperature();
@@ -106,14 +97,9 @@ SensorReadings SensorManager::read()
     
     if (readings.valid)
     {
-        Serial.printf("Sensor readings VALID - Temp: %.1fF, Humidity: %.1f%%\n", 
-                     readings.temperature, readings.humidity);
         lastReadings = readings;
     }
-    else
-    {
-        Serial.println("Sensor readings INVALID");
-    }
+
     
     return readings;
 }

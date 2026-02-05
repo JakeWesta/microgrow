@@ -33,18 +33,14 @@ Fan::Fan(uint8_t pin) : pin(pin)
 
 void Fan::write(uint8_t pwm)
 {
-    if (manualOverride)
-    {
-        pwm = manualValue;
-    }
-
     if (pwm != currentPWM)
     {
         currentPWM = pwm;
-        // For now, using digital on/off
         digitalWrite(pin, pwm > 0 ? HIGH : LOW);
 
-        Serial.printf("Fan: PWM=%d%s\n", pwm, manualOverride ? " (manual)" : "");
+        Serial.printf("Fan: PWM=%d%s\n",
+                      pwm,
+                      manualOverride ? " (manual)" : "");
     }
 }
 
@@ -65,6 +61,11 @@ WaterPump::WaterPump(uint8_t pin) : pin(pin)
 
 void WaterPump::write(uint8_t value)
 {
+    if (manualOverride)
+    {
+        value = manualValue;
+    }
+
     if (value > 0)
     {
         on();
@@ -107,14 +108,14 @@ Mister::Mister(uint8_t pin) : pin(pin)
 
 void Mister::write(uint8_t value)
 {
-    if (value > 0)
-    {
+    Serial.printf("Mister: write(%d)%s\n",
+                  value,
+                  manualOverride ? " (manual)" : "");
+
+    if (value != 0)
         on();
-    }
     else
-    {
         off();
-    }
 }
 
 void Mister::on()

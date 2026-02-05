@@ -267,14 +267,16 @@ void MQTTClient::handleOverride(JsonDocument &doc) {
 
   switch (actuatorId) {
   case FAN_ID: {
-    Fan &fan = actuators->getFan();
-    if (enable) {
-      uint8_t value = doc["value"].as<uint8_t>();
-      fan.setManualOverride(true, value);
-    } else {
-      fan.setManualOverride(false);
-    }
-    break;
+      Fan &fan = actuators->getFan();
+      if (enable) {
+          uint8_t value = doc["value"] | 255;   // default full power if not provided
+          fan.setManualOverride(true, value);
+          fan.write(value); // drive immediately
+      } else {
+          fan.setManualOverride(false);
+          // Automation will take over on next update()
+      }
+      break;
   }
 
   case WATER_PUMP_ID: {
@@ -312,14 +314,16 @@ void MQTTClient::handleOverride(JsonDocument &doc) {
     break;
   }
   case MISTER_ID: {
-    Mister &mister = actuators->getMister();
-    if (enable) {
-      uint8_t value = doc["value"].as<uint8_t>();
-      mister.setManualOverride(true, value);
-    } else {
-      mister.setManualOverride(false);
-    }
-    break;
+      Mister &mister = actuators->getMister();
+      if (enable) {
+          uint8_t value = doc["value"] | 1;  // non-zero means ON
+          mister.setManualOverride(true, value);
+          mister.write(value);  // turn ON/OFF immediately
+      } else {
+          mister.setManualOverride(false);
+          // Automation will handle it next cycle
+      }
+      break;
   }
 
   default:
