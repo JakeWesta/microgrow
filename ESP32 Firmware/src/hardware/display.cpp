@@ -166,7 +166,6 @@ void DisplayManager::showError(const String &message)
 
 void DisplayManager::showQRCode(const String &data)
 {
-    state = DisplayState::QR_CODE;
     clear();
     
     // Create QR code

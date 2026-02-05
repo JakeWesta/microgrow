@@ -266,7 +266,7 @@ void networkTask(void *param)
                     TickType_t now = xTaskGetTickCount();
                     if (now - lastPublish > pdMS_TO_TICKS(MQTT_PUBLISH_INTERVAL_MS))
                     {
-                        SensorReadings readings = sensors->getLastReadings();
+                        SensorReadings readings = sensors->read();
                         if (readings.valid)
                         {
                             mqttClient->publishSensorData(
