@@ -10,3 +10,9 @@ Measuring power output of full load of board to find power constraints for porta
 
 1/30/2026
 Redesign of PCB to accomodate mister, and added busses to have the capability of new possible components.
+
+2/1/2026 - 2/8/2026
+PCB updates and new one(s) ordered. Notably added external bus, new mister and auxiliary button capabilities
+tons of soldering of connectors, header pins, JST PH cables
+set up power requirements test bench to accomodate new maximum throughput regarding mister (~1.5A peak current!) in collaboration with Matthew
+more pump debugging
