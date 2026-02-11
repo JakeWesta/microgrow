@@ -13,14 +13,12 @@ class Habitat extends HiveObject {
   @HiveField(2)
   String greenType;
 
-  // Targets
   @HiveField(3)
   int tempTarget;
 
   @HiveField(4)
   int humidityTarget;
 
-  // Light Schedule
   @HiveField(5)
   int lightStartSec;
 
@@ -30,7 +28,6 @@ class Habitat extends HiveObject {
   @HiveField(7)
   int lightIntervalSec;
 
-  // Water Schedule
   @HiveField(8)
   int waterStartSec;
 
@@ -42,6 +39,10 @@ class Habitat extends HiveObject {
 
   @HiveField(11)
   final DateTime createdAt;
+
+  @HiveField(12)
+  bool harvested;
+
 
   Habitat({
     required this.id,
@@ -56,5 +57,7 @@ class Habitat extends HiveObject {
     required this.waterDurationSec,
     required this.waterIntervalSec,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    bool? harvested
+  }) : createdAt = createdAt ?? DateTime.now(),
+       harvested = false;
 }

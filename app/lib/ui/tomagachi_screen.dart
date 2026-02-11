@@ -145,6 +145,39 @@ class _TomagachiScreenState extends State<TomagachiScreen>
                 child: Icon(Icons.wb_sunny, size: 60, color: Colors.yellow[700]),
               ),
               Positioned(
+                top: 40,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Consumer<MyAppState>(
+                    builder: (context, appState, _) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.monetization_on, color: Colors.amber),
+                            const SizedBox(width: 8),
+                            Text(
+                              appState.userCoins.toString(),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
               top: 40,
               right: 20,
               child: ElevatedButton(

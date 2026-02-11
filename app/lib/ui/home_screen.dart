@@ -83,17 +83,20 @@ class HomeScreen extends StatelessWidget {
                         width: double.maxFinite,
                         child: ListView(
                           shrinkWrap: true,
-                          children: ready
-                              .map(
-                                (h) => Card(
-                                  child: ListTile(
-                                    leading: const Icon(Icons.eco, color: Colors.green),
-                                    title: Text(h.name),
-                                    subtitle: Text(h.greenType),
-                                  ),
-                                ),
-                              )
-                              .toList(),
+                          children: ready.map((h) {
+                            return Card(
+                              child: ListTile(
+                                leading: const Icon(Icons.eco, color: Colors.green),
+                                title: Text(h.name),
+                                subtitle: Text(h.greenType),
+                                trailing: const Icon(Icons.check_circle_outline),
+                                onTap: () {
+                                  context.read<MyAppState>().harvestHabitat(h);
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ),
                       actions: [

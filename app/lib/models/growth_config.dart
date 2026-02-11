@@ -8,6 +8,7 @@ double calculateGrowthProgress(DateTime createdAt) {
   return progress.clamp(0.0, 1.0);
 }
 
-bool isHabitatReady(DateTime createdAt) {
+bool isHabitatReady(DateTime createdAt, bool harvested) {
+  if (harvested) return false;
   return DateTime.now().difference(createdAt) >= demoGrowthDuration;
 }
