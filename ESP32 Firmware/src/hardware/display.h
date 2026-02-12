@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Adafruit_ST7789.h>
+#include <Adafruit_ILI9341.h>
 #include <Arduino.h>
+#include <config/pins.h>
 
 enum class DisplayState
 {
@@ -35,7 +36,7 @@ public:
     void setBrightness(uint8_t level); // 0-255
 
 private:
-    Adafruit_ST7789 tft;
+    Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
     DisplayState state;
     bool wifiConnected;
     bool mqttConnected;

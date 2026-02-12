@@ -16,7 +16,10 @@
 #define PIN_WATER_LEVEL 14
 
 // TFT Display
-#define PIN_TFT_CS 5
-#define PIN_TFT_DC 16
-#define PIN_TFT_RST 17
+#define TFT_CS 5
+#define TFT_DC 17
+#define TFT_RST 16
+#define TFT_MOSI 23
+#define TFT_SCLK 18
+#define TFT_MISO 19
 #define PIN_TFT_BL -1 // TODO get the correct pin for the backlight
