@@ -331,10 +331,16 @@ void MQTTClient::handleOverride(JsonDocument &doc)
     WaterPump &pump = actuators->getPump();
     if (enable)
     {
+      if (scheduler)
+        scheduler->getWaterSchedule().pause();
+
       pump.on();
       delay(2000); // Run for 2 seconds
       pump.off();
-    }
+
+      if (scheduler)
+        scheduler->getWaterSchedule().resume();
+        }
     break;
   }
 
