@@ -22,4 +22,3 @@
 #define TFT_MOSI 23
 #define TFT_SCLK 18
 #define TFT_MISO 19
-#define PIN_TFT_BL -1 // TODO get the correct pin for the backlight
