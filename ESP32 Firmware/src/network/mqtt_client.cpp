@@ -7,7 +7,8 @@
 
 MQTTClient *MQTTClient::instance = nullptr;
 
-MQTTClient &MQTTClient::getInstance(const String &deviceId) {
+MQTTClient &MQTTClient::getInstance(const String &deviceId)
+{
   static MQTTClient singleton(deviceId);
   instance = &singleton;
   return singleton;
@@ -17,22 +18,27 @@ MQTTClient::MQTTClient(const String &deviceId)
     : client(espClient), deviceId(deviceId),
       initState(InitState::WAITING_FOR_ID), lastReconnectAttempt(0),
       lastPublish(0), actuators(nullptr), scheduler(nullptr),
-      automation(nullptr) {
+      automation(nullptr)
+{
 
   instance = this;
 }
 
-bool MQTTClient::begin() {
+bool MQTTClient::begin()
+{
   // Check if we have existing configuration
   PersistenceManager storage;
-  if (storage.isConfigured()) {
+  if (storage.isConfigured())
+  {
     Serial.println("Found existing configuration - marking as initialized");
     initState = InitState::COMPLETE;
 
     // Load the greenType for reference
     DeviceConfig config = storage.loadConfig();
     greenType = config.greenType;
-  } else {
+  }
+  else
+  {
     Serial.println("No existing configuration - awaiting init messages");
     initState = InitState::WAITING_FOR_ID;
   }
@@ -46,13 +52,16 @@ bool MQTTClient::begin() {
   return true;
 }
 
-bool MQTTClient::connect() {
-  if (isConnected()) {
+bool MQTTClient::connect()
+{
+  if (isConnected())
+  {
     return true;
   }
 
   uint32_t now = millis();
-  if (now - lastReconnectAttempt < MQTT_RECONNECT_DELAY_MS) {
+  if (now - lastReconnectAttempt < MQTT_RECONNECT_DELAY_MS)
+  {
     return false;
   }
 
@@ -61,14 +70,18 @@ bool MQTTClient::connect() {
   String clientId = "esp32-" + deviceId;
   Serial.printf("MQTT connecting as %s...", clientId.c_str());
 
-  if (client.connect(clientId.c_str())) {
+  if (client.connect(clientId.c_str()))
+  {
     Serial.println(" connected");
 
-    if (initState == InitState::COMPLETE) {
+    if (initState == InitState::COMPLETE)
+    {
       // Already configured, subscribe to habitat topics only
       subscribeToHabitatTopics();
       Serial.println("Already configured - skipping init subscription");
-    } else {
+    }
+    else
+    {
       // Awaiting configuration, subscribe to init topic
       subscribeToInitTopics();
       Serial.println("Awaiting configuration via init topic");
@@ -83,34 +96,42 @@ bool MQTTClient::connect() {
 
 bool MQTTClient::isConnected() { return client.connected(); }
 
-void MQTTClient::disconnect() {
-  if (isConnected()) {
+void MQTTClient::disconnect()
+{
+  if (isConnected())
+  {
     client.disconnect();
     Serial.println("MQTT disconnected");
   }
 }
 
-void MQTTClient::loop() {
-  if (isConnected()) {
+void MQTTClient::loop()
+{
+  if (isConnected())
+  {
     client.loop();
   }
 }
 
-void MQTTClient::subscribeToInitTopics() {
+void MQTTClient::subscribeToInitTopics()
+{
   String initTopic = "microgrow/" + deviceId + "/init";
   client.subscribe(initTopic.c_str());
   Serial.printf("Subscribed to: %s\n", initTopic.c_str());
 }
 
-void MQTTClient::subscribeToHabitatTopics() {
+void MQTTClient::subscribeToHabitatTopics()
+{
   String overrideTopic = "microgrow/" + deviceId + "/override";
   client.subscribe(overrideTopic.c_str());
   Serial.printf("Subscribed to: %s\n", overrideTopic.c_str());
 }
 
 bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow,
-                                   bool lightOn) {
-  if (!isConnected()) {
+                                   bool lightOn)
+{
+  if (!isConnected())
+  {
     return false;
   }
 
@@ -128,8 +149,10 @@ bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow,
   return success;
 }
 
-bool MQTTClient::publishStatus(const String &message) {
-  if (!isConnected()) {
+bool MQTTClient::publishStatus(const String &message)
+{
+  if (!isConnected())
+  {
     return false;
   }
 
@@ -138,18 +161,22 @@ bool MQTTClient::publishStatus(const String &message) {
 }
 
 void MQTTClient::staticCallback(char *topic, byte *payload,
-                                unsigned int length) {
-  if (instance) {
+                                unsigned int length)
+{
+  if (instance)
+  {
     instance->messageCallback(topic, payload, length);
   }
 }
 
 void MQTTClient::messageCallback(char *topic, byte *payload,
-                                 unsigned int length) {
+                                 unsigned int length)
+{
   // Convert payload to string
   String message;
   message.reserve(length);
-  for (unsigned int i = 0; i < length; i++) {
+  for (unsigned int i = 0; i < length; i++)
+  {
     message += (char)payload[i];
   }
 
@@ -158,7 +185,8 @@ void MQTTClient::messageCallback(char *topic, byte *payload,
   // Parse JSON
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, message);
-  if (err) {
+  if (err)
+  {
     Serial.printf("JSON parse error: %s\n", err.c_str());
     return;
   }
@@ -166,21 +194,25 @@ void MQTTClient::messageCallback(char *topic, byte *payload,
   String topicStr = String(topic);
 
   // Handle init messages
-  if (topicStr.endsWith("/init")) {
+  if (topicStr.endsWith("/init"))
+  {
     handleInit(doc);
     return;
   }
 
   // Handle override messages
-  if (topicStr.endsWith("/override")) {
+  if (topicStr.endsWith("/override"))
+  {
     handleOverride(doc);
     return;
   }
 }
 
-void MQTTClient::handleInit(JsonDocument &doc) {
+void MQTTClient::handleInit(JsonDocument &doc)
+{
   // Check if this is a greenType message
-  if (doc.containsKey("greenType")) {
+  if (doc["greenType"].is<String>())
+  {
     greenType = doc["greenType"].as<String>();
 
     float targetTemp = doc["target"]["temp"].as<float>();
@@ -189,7 +221,8 @@ void MQTTClient::handleInit(JsonDocument &doc) {
     Serial.printf("Received greenType: %s\n", greenType.c_str());
 
     // Set automation targets
-    if (automation) {
+    if (automation)
+    {
       automation->setTargets(targetTemp, targetHum);
       automation->enable();
     }
@@ -202,7 +235,8 @@ void MQTTClient::handleInit(JsonDocument &doc) {
     initState = InitState::WAITING_FOR_SCHEDULE;
   }
   // Check if this is schedule message
-  else if (doc.containsKey("light") && doc.containsKey("water")) {
+  else if (doc["light"].is<JsonObject>() && doc["water"].is<JsonObject>())
+  {
     Serial.println("Received schedule configuration");
 
     // Extract schedule data
@@ -220,7 +254,8 @@ void MQTTClient::handleInit(JsonDocument &doc) {
                   waterStart, waterDur, waterInt);
 
     // Configure schedules
-    if (scheduler) {
+    if (scheduler)
+    {
       scheduler->getLightSchedule().setTiming(lightStart, lightDur, lightInt);
       scheduler->getLightSchedule().enable();
 
@@ -242,15 +277,19 @@ void MQTTClient::handleInit(JsonDocument &doc) {
     Serial.println("Configuration complete!");
     saveConfiguration();
     publishStatus("configured");
-  } else {
+  }
+  else
+  {
     Serial.println("ERROR: Unknown init message format");
     serializeJsonPretty(doc, Serial);
     Serial.println();
   }
 }
 
-void MQTTClient::handleOverride(JsonDocument &doc) {
-  if (!actuators) {
+void MQTTClient::handleOverride(JsonDocument &doc)
+{
+  if (!actuators)
+  {
     Serial.println("Actuators not available");
     return;
   }
@@ -265,26 +304,33 @@ void MQTTClient::handleOverride(JsonDocument &doc) {
 #define LED_ID 2
 #define MISTER_ID 3
 
-  switch (actuatorId) {
-  case FAN_ID: {
-      Fan &fan = actuators->getFan();
-      if (enable) {
-          uint8_t value = doc["value"] | 255;   // default full power if not provided
-          fan.setManualOverride(true, value);
-          if (value)
-              fan.on();
-          else
-              fan.off();
-      } else {
-          fan.setManualOverride(false);
-          // Automation will take over on next update()
-      }
-      break;
+  switch (actuatorId)
+  {
+  case FAN_ID:
+  {
+    Fan &fan = actuators->getFan();
+    if (enable)
+    {
+      uint8_t value = doc["value"] | 255; // default full power if not provided
+      fan.setManualOverride(true);
+      if (value)
+        fan.on();
+      else
+        fan.off();
+    }
+    else
+    {
+      fan.setManualOverride(false);
+      // Automation will take over on next update()
+    }
+    break;
   }
 
-  case WATER_PUMP_ID: {
+  case WATER_PUMP_ID:
+  {
     WaterPump &pump = actuators->getPump();
-    if (enable) {
+    if (enable)
+    {
       pump.on();
       delay(2000); // Run for 2 seconds
       pump.off();
@@ -292,44 +338,54 @@ void MQTTClient::handleOverride(JsonDocument &doc) {
     break;
   }
 
-  case LED_ID: {
+  case LED_ID:
+  {
     LEDStrip &leds = actuators->getLEDs();
-    if (enable) {
+    if (enable)
+    {
       uint8_t r = doc["r"].as<uint8_t>();
       uint8_t g = doc["g"].as<uint8_t>();
       uint8_t b = doc["b"].as<uint8_t>();
       leds.setColor(r, g, b);
-      leds.setManualOverride(true, 255);
+      leds.setManualOverride(true);
 
       // Pause light schedule while manual override is active
-      if (scheduler) {
+      if (scheduler)
+      {
         scheduler->getLightSchedule().pause();
       }
-    } else {
+    }
+    else
+    {
       leds.off();
       leds.setManualOverride(false);
 
       // Resume light schedule
-      if (scheduler) {
+      if (scheduler)
+      {
         scheduler->getLightSchedule().resume();
       }
     }
     break;
   }
-  case MISTER_ID: {
-      Mister &mister = actuators->getMister();
-      if (enable) {
-          uint8_t value = doc["value"] | 1;  // non-zero means ON
-          mister.setManualOverride(true, value);
-          if (value)
-              mister.on();
-          else
-              mister.off();
-      } else {
-          mister.setManualOverride(false);
-          // Automation will handle it next cycle
-      }
-      break;
+  case MISTER_ID:
+  {
+    Mister &mister = actuators->getMister();
+    if (enable)
+    {
+      uint8_t value = doc["value"] | 1; // non-zero means ON
+      mister.setManualOverride(true);
+      if (value)
+        mister.on();
+      else
+        mister.off();
+    }
+    else
+    {
+      mister.setManualOverride(false);
+      // Automation will handle it next cycle
+    }
+    break;
   }
 
   default:
@@ -338,19 +394,22 @@ void MQTTClient::handleOverride(JsonDocument &doc) {
   }
 }
 
-void MQTTClient::saveConfiguration() {
+void MQTTClient::saveConfiguration()
+{
   PersistenceManager storage;
 
   DeviceConfig config;
   config.greenType = greenType;
 
-  if (automation) {
+  if (automation)
+  {
     config.targetTemp = automation->getTargets().temperature;
     config.targetHumidity = automation->getTargets().humidity;
   }
 
   // Get schedule timings from scheduler
-  if (scheduler) {
+  if (scheduler)
+  {
     auto &light = scheduler->getLightSchedule().getTiming();
     auto &water = scheduler->getWaterSchedule().getTiming();
 

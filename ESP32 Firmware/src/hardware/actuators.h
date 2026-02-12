@@ -14,14 +14,11 @@ public:
     virtual const char *getName() const = 0;
 
     // Manual override management
-    void setManualOverride(bool enabled, uint8_t value = 0);
+    void setManualOverride(bool enabled) { manualOverride = enabled; }
     bool isManualOverride() const { return manualOverride; }
-    uint8_t getManualValue() const { return manualValue; }
 
 protected:
     bool manualOverride = false;
-    uint8_t manualValue = 0;
-    uint32_t manualStartTime = 0;
 
     friend class ActuatorManager;
 };
@@ -113,7 +110,6 @@ public:
 
     // Bulk operations
     void allOff();
-    void updateAll(); // Check for override timeouts, etc.
 
 private:
     Fan fan;

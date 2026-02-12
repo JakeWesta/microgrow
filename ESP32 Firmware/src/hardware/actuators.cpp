@@ -3,25 +3,6 @@
 #include "../config/config.h"
 
 // ============================================================================
-// Base Actuator
-// ============================================================================
-
-void Actuator::setManualOverride(bool enabled, uint8_t value)
-{
-    manualOverride = enabled;
-    manualValue = value;
-    if (enabled)
-    {
-        manualStartTime = millis();
-        Serial.printf("%s: Manual override enabled (value=%d)\n", getName(), value);
-    }
-    else
-    {
-        Serial.printf("%s: Manual override OFF\n", getName());
-    }
-}
-
-// ============================================================================
 // Fan
 // ============================================================================
 
@@ -193,25 +174,4 @@ void ActuatorManager::allOff()
     mister.off();
     leds.off();
     Serial.println("All actuators turned OFF");
-}
-
-void ActuatorManager::updateAll()
-{
-// Check for manual override timeouts
-#if MANUAL_OVERRIDE_TIMEOUT_MS > 0
-    uint32_t now = millis();
-
-    Actuator *actuators[] = {&fan, &pump, &mister, &leds};
-    for (auto *act : actuators)
-    {
-        if (act->isManualOverride())
-        {
-            if (now - act->manualStartTime > MANUAL_OVERRIDE_TIMEOUT_MS)
-            {
-                Serial.printf("%s: Manual override timeout\n", act->getName());
-                act->setManualOverride(false);
-            }
-        }
-    }
-#endif
 }
