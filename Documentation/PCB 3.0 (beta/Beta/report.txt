@@ -1,0 +1,238 @@
+Info: Processing symbol 'DHT1:Connector_Molex:Molex_Micro-Fit_3.0_43650-0400_1x04_P3.00mm_Horizontal'.
+Info: Processing symbol 'R1:Resistor_SMD:R_0201_0603Metric'.
+Info: Processing symbol 'Q3:Package_TO_SOT_THT:TO-220-3_Vertical'.
+Info: Processing symbol 'R3:Resistor_SMD:R_0201_0603Metric'.
+Info: Processing symbol 'ST7789V1:Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal'.
+Info: Processing symbol 'Water_Level_Sensor1:Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal'.
+Info: Total warnings: 18, errors: 19.
+Info: Processing symbol 'M1:Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical'.
+Info: Processing symbol 'U1:esp32_devkit_v1_doit:esp32_devkit_v1_doit'.
+Info: Processing symbol 'SW1:Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical'.
+Info: Processing symbol 'Perilstatic_Pump1:Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical'.
+Info: Processing symbol 'LED_STRIP1:Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal'.
+Info: Processing symbol 'Q1:Package_TO_SOT_THT:TO-220-3_Vertical'.
+Info: Processing symbol 'R4:Resistor_SMD:R_0201_0603Metric'.
+Info: Processing symbol 'R2:Resistor_SMD:R_0201_0603Metric'.
+Added DHT1 (footprint 'Connector_Molex:Molex_Micro-Fit_3.0_43650-0400_1x04_P3.00mm_Horizontal').
+Changed REF** reference designator to DHT1.
+Changed DHT1 value from Molex_Micro-Fit_3.0_43650-0400_1x04_P3.00mm_Horizontal to ~.
+Updated DHT1 symbol association from  to /6e4c08a4-b1cd-4914-aef5-b97c3696f05f.
+Updated DHT1 sheetname to '/'.
+Updated DHT1 sheetfile to 'prototype.kicad_sch'.
+Updated Water_Level_Sensor1 sheetname to '/'.
+Updated Water_Level_Sensor1 sheetfile to 'prototype.kicad_sch'.
+
+
+Added LED_STRIP1 (footprint 'Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal').
+Changed REF** reference designator to LED_STRIP1.
+Changed LED_STRIP1 value from Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal to ~.
+Updated LED_STRIP1 symbol association from  to /8e498da7-6c69-4450-a1d9-924dce50ed07.
+Updated LED_STRIP1 sheetname to '/'.
+Updated LED_STRIP1 sheetfile to 'prototype.kicad_sch'.
+Changed REF** reference designator to Water_Level_Sensor1.
+Added M1 (footprint 'Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical').
+Changed REF** reference designator to M1.
+Changed M1 value from Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical to Fan.
+Updated M1 symbol association from  to /a24ab250-104e-40cc-be6c-cd05863d6f31.
+Updated M1 fields.
+Updated M1 sheetname to '/'.
+Updated M1 sheetfile to 'prototype.kicad_sch'.
+Add net /FAN_NEG.
+Connected M1 pin 2 to /FAN_NEG.
+Add net VCC.
+Connected M1 pin 1 to VCC.
+Added Perilstatic_Pump1 (footprint 'Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical').
+Changed REF** reference designator to Perilstatic_Pump1.
+Changed Perilstatic_Pump1 value from Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical to ~.
+Updated Perilstatic_Pump1 symbol association from  to /13c4dc11-f264-4864-8656-4de5b2fcf814.
+Updated Perilstatic_Pump1 sheetname to '/'.
+Updated Perilstatic_Pump1 sheetfile to 'prototype.kicad_sch'.
+Added Q1 (footprint 'Package_TO_SOT_THT:TO-220-3_Vertical').
+Changed REF** reference designator to Q1.
+Changed Q1 value from TO-220-3_Vertical to IRLB8721PBF.
+Updated Q1 symbol association from  to /b185a6f1-6a33-459d-a671-ce34d81b2ea3.
+Updated Q1 fields.
+Updated Q1 sheetname to '/'.
+Updated Q1 sheetfile to 'prototype.kicad_sch'.
+Updated Q1 footprint filters to 'TO?220*'.
+Add net GND.
+Connected Q1 pin 3 to GND.
+Add net /PUMP_NEG.
+Connected Q1 pin 2 to /PUMP_NEG.
+Add net Net-(Q1-G).
+Connected Q1 pin 1 to Net-(Q1-G).
+Updated M1 footprint filters to 'PinHeader*P2.54mm* TerminalBlock*'.
+Added Q3 (footprint 'Package_TO_SOT_THT:TO-220-3_Vertical').
+Changed REF** reference designator to Q3.
+Changed Q3 value from TO-220-3_Vertical to IRLB8721PBF.
+Updated Q3 symbol association from  to /fbe2aa08-65bc-4db5-b509-0606b8fdc2ba.
+Updated Q3 fields.
+Updated Q3 sheetname to '/'.
+Updated Q3 sheetfile to 'prototype.kicad_sch'.
+Updated Q3 footprint filters to 'TO?220*'.
+Add net Net-(Q3-G).
+Connected Q3 pin 1 to Net-(Q3-G).
+Connected Q3 pin 2 to /FAN_NEG.
+Connected Q3 pin 3 to GND.
+Added R1 (footprint 'Resistor_SMD:R_0201_0603Metric').
+Changed REF** reference designator to R1.
+Changed R1 value from R_0201_0603Metric to 100.
+Updated R1 symbol association from  to /6cbc41ab-6199-446f-b66f-0273e11d1e1b.
+Updated R1 fields.
+Updated R1 sheetname to '/'.
+Updated R1 sheetfile to 'prototype.kicad_sch'.
+Updated R1 footprint filters to 'R_*'.
+Add net /PUMP.
+Connected R1 pin 2 to /PUMP.
+Connected R1 pin 1 to Net-(Q1-G).
+Added R2 (footprint 'Resistor_SMD:R_0201_0603Metric').
+Changed REF** reference designator to R2.
+Changed R2 value from R_0201_0603Metric to 100k.
+Updated R2 symbol association from  to /58fef6ab-5448-4966-9282-118c6e4f16f3.
+Updated R2 sheetname to '/'.
+Updated R2 sheetfile to 'prototype.kicad_sch'.
+Updated R2 footprint filters to 'R_*'.
+Connected R2 pin 1 to GND.
+Connected R2 pin 2 to Net-(Q1-G).
+Added R3 (footprint 'Resistor_SMD:R_0201_0603Metric').
+Changed REF** reference designator to R3.
+Changed R3 value from R_0201_0603Metric to 100.
+Updated R3 symbol association from  to /cc2fe59e-3a58-4862-b4cd-096af761090b.
+Updated R3 fields.
+Updated R3 sheetname to '/'.
+Updated R3 sheetfile to 'prototype.kicad_sch'.
+Updated R3 footprint filters to 'R_*'.
+Connected R3 pin 2 to Net-(Q3-G).
+Add net /FAN.
+Connected R3 pin 1 to /FAN.
+Added R4 (footprint 'Resistor_SMD:R_0201_0603Metric').
+Changed REF** reference designator to R4.
+Changed R4 value from R_0201_0603Metric to 100k.
+Updated R4 symbol association from  to /ef9e54ad-bc10-445a-8cc7-7e4a79940005.
+Updated R4 fields.
+Updated R4 sheetname to '/'.
+Updated R4 sheetfile to 'prototype.kicad_sch'.
+Updated R4 footprint filters to 'R_*'.
+Connected R4 pin 2 to GND.
+Connected R4 pin 1 to Net-(Q3-G).
+Updated R2 fields.
+Added ST7789V1 (footprint 'Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal').
+Changed REF** reference designator to ST7789V1.
+Changed ST7789V1 value from Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal to ~.
+Updated ST7789V1 symbol association from  to /6443309b-f941-4119-b5bf-95145ad43db5.
+Updated ST7789V1 sheetname to '/'.
+Updated ST7789V1 sheetfile to 'prototype.kicad_sch'.
+Added SW1 (footprint 'Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical').
+Changed REF** reference designator to SW1.
+Changed SW1 value from Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical to SW_Push.
+Updated SW1 symbol association from  to /d7c7dc86-ded3-42bf-bfc8-d6a93b28d2ff.
+Updated SW1 fields.
+Updated SW1 sheetname to '/'.
+Updated SW1 sheetfile to 'prototype.kicad_sch'.
+Add net /WiFi_BUTTON.
+Connected SW1 pin 1 to /WiFi_BUTTON.
+Connected SW1 pin 2 to GND.
+Added U1 (footprint 'esp32_devkit_v1_doit:esp32_devkit_v1_doit').
+Changed REF** reference designator to U1.
+Changed U1 value from ESP32-DevKit-V1-DOIT to ESP32-DEVKIT-V1.
+Updated U1 symbol association from  to /7857917b-6d23-4520-a81d-1aefb2627a26.
+Updated U1 fields.
+Updated U1 sheetname to '/'.
+Updated U1 sheetfile to 'prototype.kicad_sch'.
+Add net /LCD_DC.
+Connected U1 pin 6 to /LCD_DC.
+Add net /DHT_SDA.
+Connected U1 pin 11 to /DHT_SDA.
+Add net +3V3.
+Connected U1 pin 30 to +3V3.
+Add net /LCD_CLK.
+Connected U1 pin 9 to /LCD_CLK.
+Add net unconnected-(U1-D4-Pad5).
+Connected U1 pin 5 to unconnected-(U1-D4-Pad5).
+Add net /LCD_RST.
+Connected U1 pin 7 to /LCD_RST.
+Connected U1 pin 1 to VCC.
+Add net /LED_STRIP.
+Connected U1 pin 25 to /LED_STRIP.
+Add net unconnected-(U1-D33-Pad22).
+Connected U1 pin 22 to unconnected-(U1-D33-Pad22).
+Add net /WATER_LEV.
+Connected U1 pin 26 to /WATER_LEV.
+Connected U1 pin 2 to GND.
+Add net unconnected-(U1-D35-Pad20).
+Connected U1 pin 20 to unconnected-(U1-D35-Pad20).
+Add net unconnected-(U1-D34-Pad19).
+Connected U1 pin 19 to unconnected-(U1-D34-Pad19).
+Connected U1 pin 29 to GND.
+Add net unconnected-(U1-VP-Pad17).
+Connected U1 pin 17 to unconnected-(U1-VP-Pad17).
+Connected U1 pin 13 to unconnected-(U1-TX0-Pad13).
+Add net unconnected-(U1-D25-Pad23).
+Connected U1 pin 23 to unconnected-(U1-D25-Pad23).
+Connected U1 pin 24 to /FAN.
+Add net unconnected-(U1-EN-Pad16).
+Connected U1 pin 16 to unconnected-(U1-EN-Pad16).
+Add net unconnected-(U1-D19-Pad10).
+Connected U1 pin 10 to unconnected-(U1-D19-Pad10).
+Add net unconnected-(U1-VN-Pad18).
+Connected U1 pin 18 to unconnected-(U1-VN-Pad18).
+Add net /LCD_CS.
+Connected U1 pin 8 to /LCD_CS.
+Add net /LCD_DIN.
+Connected U1 pin 15 to /LCD_DIN.
+Add net unconnected-(U1-D13-Pad28).
+Connected U1 pin 28 to unconnected-(U1-D13-Pad28).
+Add net unconnected-(U1-D12-Pad27).
+Connected U1 pin 27 to unconnected-(U1-D12-Pad27).
+Add net unconnected-(U1-RX0-Pad12).
+Connected U1 pin 12 to unconnected-(U1-RX0-Pad12).
+Connected U1 pin 21 to /PUMP.
+Add net /DHT_SCL.
+Connected U1 pin 14 to /DHT_SCL.
+Connected U1 pin 4 to /WiFi_BUTTON.
+Add net unconnected-(U1-D15-Pad3).
+Connected U1 pin 3 to unconnected-(U1-D15-Pad3).
+Added Water_Level_Sensor1 (footprint 'Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal').
+Add net unconnected-(U1-TX0-Pad13).
+Changed Water_Level_Sensor1 value from Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal to ~.
+Updated Water_Level_Sensor1 symbol association from  to /28ca019c-f3e1-41e0-b59c-fe60d403124b.
+Warning: No net found for component DHT1 pad 4 (no pin 4 in symbol).
+Warning: No net found for component DHT1 pad 3 (no pin 3 in symbol).
+Warning: No net found for component DHT1 pad 1 (no pin 1 in symbol).
+Warning: No net found for component DHT1 pad 2 (no pin 2 in symbol).
+Warning: No net found for component LED_STRIP1 pad 3 (no pin 3 in symbol).
+Warning: No net found for component LED_STRIP1 pad 2 (no pin 2 in symbol).
+Warning: No net found for component LED_STRIP1 pad 1 (no pin 1 in symbol).
+Warning: No net found for component ST7789V1 pad 2 (no pin 2 in symbol).
+Warning: No net found for component Perilstatic_Pump1 pad 1 (no pin 1 in symbol).
+Warning: No net found for component ST7789V1 pad 5 (no pin 5 in symbol).
+Warning: No net found for component ST7789V1 pad 1 (no pin 1 in symbol).
+Warning: No net found for component ST7789V1 pad 6 (no pin 6 in symbol).
+Warning: No net found for component Water_Level_Sensor1 pad 2 (no pin 2 in symbol).
+Warning: No net found for component Water_Level_Sensor1 pad 1 (no pin 1 in symbol).
+Warning: No net found for component Water_Level_Sensor1 pad 3 (no pin 3 in symbol).
+Warning: No net found for component ST7789V1 pad 4 (no pin 4 in symbol).
+Warning: No net found for component Perilstatic_Pump1 pad 2 (no pin 2 in symbol).
+Warning: No net found for component ST7789V1 pad 3 (no pin 3 in symbol).
+Error: Symbol DHT1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0400_1x04_P3.00mm_Horizontal.
+Error: Symbol DHT1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0400_1x04_P3.00mm_Horizontal.
+Error: Symbol DHT1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0400_1x04_P3.00mm_Horizontal.
+Error: Symbol LED_STRIP1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal.
+Error: Symbol Perilstatic_Pump1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical.
+Error: Symbol Perilstatic_Pump1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0215_1x02_P3.00mm_Vertical.
+Error: Symbol ST7789V1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal.
+Error: Symbol ST7789V1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal.
+Error: Symbol ST7789V1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal.
+Error: Symbol ST7789V1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal.
+Error: Symbol ST7789V1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal.
+Error: Symbol ST7789V1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal.
+Error: Symbol ST7789V1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0600_1x06_P3.00mm_Horizontal.
+Error: Symbol Water_Level_Sensor1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal.
+Error: Symbol Water_Level_Sensor1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal.
+Error: Symbol Water_Level_Sensor1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal.
+Error: Symbol LED_STRIP1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal.
+Error: Symbol LED_STRIP1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0300_1x03_P3.00mm_Horizontal.
+Error: Symbol DHT1 has pins with no number.  These pins can not be matched to pads in Connector_Molex:Molex_Micro-Fit_3.0_43650-0400_1x04_P3.00mm_Horizontal.
+
+
+Info: Total warnings: 18, errors: 19.
