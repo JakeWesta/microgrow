@@ -428,9 +428,10 @@ void MQTTClient::handleRefresh()
 
   String jsonString;
   serializeJson(doc, jsonString);
-  client.publish(("microgrow/" + deviceId + "/readings").c_str(), jsonString.c_str());
+  client.publish(("microgrow/" + deviceId + "/refresh").c_str(), jsonString.c_str());
 
   delete[] readings;
+  storage.clearReadings();
 }
 
 void MQTTClient::saveConfiguration()
