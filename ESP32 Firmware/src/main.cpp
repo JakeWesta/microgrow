@@ -231,6 +231,7 @@ void networkTask(void *param)
 {
     TickType_t lastWakeTime = xTaskGetTickCount();
     TickType_t lastPublish = 0;
+    time_t lastReading = 0;
 
     configTime(TIMEZONE_OFFSET_S, DST_OFFSET_S, NTP_SERVER_1, NTP_SERVER_2);
 
@@ -274,6 +275,23 @@ void networkTask(void *param)
                                 actuators->getLEDs().isOn());
                             lastPublish = now;
                         }
+                    }
+
+                    // Save hourly readings to NVS for historical data - only if MQTT is connected to ensure time is valid
+                    time_t now_t;
+                    time(&now_t);
+                    if (now_t - lastReading >= 3600)
+                    {
+                        SensorReadings readings = sensors->read();
+                        if (readings.valid)
+                        {
+                            StoredReading r;
+                            r.temperature = readings.temperature;
+                            r.humidity = readings.humidity;
+                            r.timestamp = now_t;
+                            storage->saveReading(r);
+                        }
+                        lastReading = now_t;
                     }
                 }
             }

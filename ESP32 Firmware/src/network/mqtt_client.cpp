@@ -206,6 +206,11 @@ void MQTTClient::messageCallback(char *topic, byte *payload,
     handleOverride(doc);
     return;
   }
+
+  if (topicStr.endsWith("/refresh"))
+  {
+    handleRefresh();
+  }
 }
 
 void MQTTClient::handleInit(JsonDocument &doc)
@@ -340,7 +345,7 @@ void MQTTClient::handleOverride(JsonDocument &doc)
 
       if (scheduler)
         scheduler->getWaterSchedule().resume();
-        }
+    }
     break;
   }
 
@@ -398,6 +403,34 @@ void MQTTClient::handleOverride(JsonDocument &doc)
     Serial.printf("Unknown actuator ID: %d\n", actuatorId);
     break;
   }
+}
+
+void MQTTClient::handleRefresh()
+{
+  PersistenceManager storage;
+  uint8_t readingCount = storage.getReadingCount();
+  StoredReading *readings = new StoredReading[readingCount];
+  storage.getAllReadings(readings);
+
+  JsonDocument doc;
+  JsonArray array = doc.to<JsonArray>();
+
+  char timeStr[20];
+  for (uint8_t i = 0; i < readingCount; i++)
+  {
+    JsonObject obj = array.add<JsonObject>();
+    obj["temp"] = readings[i].temperature;
+    obj["humidity"] = readings[i].humidity;
+    struct tm *ti = localtime(&readings[i].timestamp);
+    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", ti);
+    obj["timestamp"] = timeStr;
+  }
+
+  String jsonString;
+  serializeJson(doc, jsonString);
+  client.publish(("microgrow/" + deviceId + "/readings").c_str(), jsonString.c_str());
+
+  delete[] readings;
 }
 
 void MQTTClient::saveConfiguration()

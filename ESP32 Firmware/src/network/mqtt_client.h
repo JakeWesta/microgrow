@@ -67,6 +67,7 @@ private:
     // Message handlers
     void handleInit(JsonDocument &doc);
     void handleOverride(JsonDocument &doc);
+    void handleRefresh();
     void messageCallback(char *topic, byte *payload, unsigned int length);
 
     // Subscription management
