@@ -50,3 +50,6 @@
 
 // Debug
 #define SERIAL_BAUD 115200
+
+// Historical Data
+#define READING_SAVE_INTERVAL_S 3600 // 1 hour

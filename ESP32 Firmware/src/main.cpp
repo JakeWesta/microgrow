@@ -280,7 +280,7 @@ void networkTask(void *param)
                     // Save hourly readings to NVS for historical data - only if MQTT is connected to ensure time is valid
                     time_t now_t;
                     time(&now_t);
-                    if (now_t - lastReading >= 3600)
+                    if (now_t - lastReading >= READING_SAVE_INTERVAL_S)
                     {
                         SensorReadings readings = sensors->read();
                         if (readings.valid)
