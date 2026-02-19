@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/habitat_obj.dart';
 import '../mqtt/mqtt_connect.dart';
+import 'dart:convert';
+
 
 class SensorDataScreen extends StatefulWidget {
   final Habitat habitat;
@@ -16,6 +18,8 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
   String? humidity;
   String? temp;
   String? water;
+  bool isLoadingHistory = false;
+  List<Map<String, dynamic>> historyData = [];
 
   @override
   void initState() {
@@ -40,6 +44,33 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
       },
     );
   }
+
+  Future<void> fetchHistory() async {
+  setState(() {
+    isLoadingHistory = true;
+  });
+
+  await MqttService.requestHistory(
+    habitatId: widget.habitat.id,
+    onMessage: (payload) {
+      try {
+        final List<dynamic> decoded = jsonDecode(payload);
+
+        setState(() {
+          for (var item in decoded) {
+            historyData.insert(0, item); 
+          }
+          isLoadingHistory = false;
+        });
+      } catch (e) {
+        setState(() {
+          isLoadingHistory = false;
+        });
+      }
+    },
+  );
+}
+
 
 Widget sensorCard(String label, String? value) {
   String displayValue;
@@ -118,13 +149,85 @@ Widget sensorCard(String label, String? value) {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            sensorCard('Light', light),
-            sensorCard('Humidity', humidity),
-            sensorCard('Temperature', temp),
-            sensorCard('Water Level', water)
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              const Text(
+                "Current Sensor Readings",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              sensorCard('Light', light),
+              sensorCard('Humidity', humidity),
+              sensorCard('Temperature', temp),
+              sensorCard('Water Level', water),
+
+              const SizedBox(height: 30),
+
+              const Text(
+                "Past Sensor Readings",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              Center(
+                child: ElevatedButton(
+                  onPressed: isLoadingHistory ? null : fetchHistory,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 82, 175, 88),
+                  ),
+                  child: isLoadingHistory
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                  "Refresh",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white
+                  ),
+                ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Column(
+                children: historyData.map((item) {
+                  return Card(
+                    elevation: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: ListTile(
+                      title: Text(
+                        "${item['timestamp']}",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        "Temp: ${item['temp']} F | Humidity: ${item['humidity']} %",
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         ),
       ),
     );
