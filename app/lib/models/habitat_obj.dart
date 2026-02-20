@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'sensor_history_obj.dart';
 
 part 'habitat_obj.g.dart';
 
@@ -43,6 +44,8 @@ class Habitat extends HiveObject {
   @HiveField(12)
   bool harvested;
 
+  @HiveField(13)
+  List<SensorHistory> history;
 
   Habitat({
     required this.id,
@@ -57,7 +60,9 @@ class Habitat extends HiveObject {
     required this.waterDurationSec,
     required this.waterIntervalSec,
     DateTime? createdAt,
-    bool? harvested
+    bool? harvested,
+    List<SensorHistory>? history
   }) : createdAt = createdAt ?? DateTime.now(),
-       harvested = false;
+       harvested = harvested ?? false,
+       history = history ?? [];
 }

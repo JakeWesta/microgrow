@@ -1,6 +1,8 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'habitat_obj.dart';
 import 'user_obj.dart';
+import 'sensor_history_obj.dart';
+
 
 class Database {
   static Future<void> init() async {
@@ -8,9 +10,12 @@ class Database {
 
     Hive.registerAdapter(HabitatAdapter());
     Hive.registerAdapter(UserAdapter());
+    Hive.registerAdapter(SensorHistoryAdapter());
+
 
     await Hive.openBox<Habitat>('habitatsBox');
     await Hive.openBox<User>('userBox');
+    
 
     final userBox = Hive.box<User>('userBox');
     if (userBox.isEmpty) {

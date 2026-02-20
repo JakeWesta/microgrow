@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/habitat_obj.dart';
+import '../models/sensor_history_obj.dart';
 import '../mqtt/mqtt_connect.dart';
 import 'dart:convert';
 
@@ -51,24 +52,36 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
   });
 
   await MqttService.requestHistory(
-    habitatId: widget.habitat.id,
-    onMessage: (payload) {
-      try {
-        final List<dynamic> decoded = jsonDecode(payload);
+  habitatId: widget.habitat.id,
+  onMessage: (payload) {
+    try {
+      final List<dynamic> decoded = jsonDecode(payload);
 
-        setState(() {
-          for (var item in decoded) {
-            historyData.insert(0, item); 
+      setState(() {
+        for (var item in decoded) {
+          final historyEntry = SensorHistory(
+            temp: (item['temp'] as num).toDouble(),
+            humidity: (item['humidity'] as num).toDouble(),
+            timestamp: DateTime.parse(item['timestamp']),
+          );
+          
+          if (!widget.habitat.history.any(
+            (e) => e.timestamp == historyEntry.timestamp,
+          )) {
+            widget.habitat.history.insert(0, historyEntry);
           }
-          isLoadingHistory = false;
-        });
-      } catch (e) {
-        setState(() {
-          isLoadingHistory = false;
-        });
-      }
-    },
-  );
+        }
+        widget.habitat.save(); 
+        isLoadingHistory = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingHistory = false;
+      });
+    }
+  },
+);
+
 }
 
 
@@ -210,17 +223,18 @@ Widget sensorCard(String label, String? value) {
               const SizedBox(height: 20),
 
               Column(
-                children: historyData.map((item) {
+                children: widget.habitat.history.map((entry) {
                   return Card(
                     elevation: 3,
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     child: ListTile(
                       title: Text(
-                        "${item['timestamp']}",
+                        entry.timestamp.toString(),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
-                        "Temp: ${item['temp']} F | Humidity: ${item['humidity']} %",
+                        "Temp: ${entry.temp.toStringAsFixed(1)} F | "
+                        "Humidity: ${entry.humidity.toStringAsFixed(1)} %",
                       ),
                     ),
                   );
