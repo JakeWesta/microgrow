@@ -3,6 +3,9 @@ import '../models/habitat_obj.dart';
 import '../models/sensor_history_obj.dart';
 import '../mqtt/mqtt_connect.dart';
 import 'dart:convert';
+import 'package:fl_chart/fl_chart.dart';
+
+
 
 
 class SensorDataScreen extends StatefulWidget {
@@ -21,6 +24,8 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
   String? water;
   bool isLoadingHistory = false;
   List<Map<String, dynamic>> historyData = [];
+  String selectedGraph = "Temperature"; 
+
 
   @override
   void initState() {
@@ -64,7 +69,7 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
             humidity: (item['humidity'] as num).toDouble(),
             timestamp: DateTime.parse(item['timestamp']),
           );
-          
+
           if (!widget.habitat.history.any(
             (e) => e.timestamp == historyEntry.timestamp,
           )) {
@@ -83,6 +88,140 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
 );
 
 }
+
+Widget buildGraph() {
+  final history = widget.habitat.history.reversed.toList(); 
+
+  if (history.isEmpty) {
+    return const Padding(
+      padding: EdgeInsets.all(20),
+      child: Text("No data available"),
+    );
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Center(
+        child: Text(
+          "$selectedGraph vs Time",
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+
+      const SizedBox(height: 10),
+
+      LayoutBuilder(
+        builder: (context, constraints) {
+          return SizedBox(
+            height: 360,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: LineChart(
+                LineChartData(
+                  minY: 0,
+                  maxY: 100,
+                  clipData: FlClipData.none(),
+
+                  gridData: FlGridData(
+                    show: true,
+                    horizontalInterval: 20,
+                  ),
+
+                  borderData: FlBorderData(
+                    show: true,
+                    border: const Border(
+                      left: BorderSide(width: 2),
+                      bottom: BorderSide(width: 2),
+                    ),
+                  ),
+
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+
+                    leftTitles: AxisTitles(
+                      axisNameWidget: Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          selectedGraph == "Temperature"
+                          ? "Temperature (F)"
+                          : "Humidity (%)",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      axisNameSize: 40, 
+                      sideTitles: const SideTitles(
+                        showTitles: true,
+                        reservedSize: 40, 
+                        interval: 20,
+                      ),
+                    ),
+
+                    bottomTitles: AxisTitles(
+                      axisNameWidget: const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: Text(
+                          "Time Since Plant (Hours)",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      axisNameSize: 40, 
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 35, 
+                        interval: history.length > 5
+                            ? (history.length / 5).floorToDouble()
+                            : 1,
+                      ),
+                    ),
+                  ),
+
+                  lineBarsData: [
+                    LineChartBarData(
+                      isCurved: true,
+                      barWidth: 3,
+                      color: selectedGraph == "Temperature"
+                          ? Colors.red
+                          : Colors.blue,
+                      dotData: const FlDotData(show: false),
+                      spots: history.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final item = entry.value;
+
+                        final value = selectedGraph == "Temperature"
+                            ? item.temp
+                            : item.humidity;
+
+                        return FlSpot(index.toDouble(), value);
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ],
+  );
+}
+
+
+
 
 
 Widget sensorCard(String label, String? value) {
@@ -164,7 +303,7 @@ Widget sensorCard(String label, String? value) {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:CrossAxisAlignment.stretch,
             children: [
 
               const Text(
@@ -191,6 +330,40 @@ Widget sensorCard(String label, String? value) {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
+              const SizedBox(height: 30),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ToggleButtons(
+                    isSelected: [
+                      selectedGraph == "Temperature",
+                      selectedGraph == "Humidity",
+                    ],
+                    onPressed: (index) {
+                      setState(() {
+                        selectedGraph = index == 0 ? "Temperature" : "Humidity";
+                      });
+                    },
+                    children: const [
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text("Temperature"),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text("Humidity"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+
+              const SizedBox(height: 20),
+
+              buildGraph(),
 
               const SizedBox(height: 30),
 
