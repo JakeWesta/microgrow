@@ -6,8 +6,6 @@ import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 
 
-
-
 class SensorDataScreen extends StatefulWidget {
   final Habitat habitat;
 

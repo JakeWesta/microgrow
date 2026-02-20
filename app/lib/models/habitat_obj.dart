@@ -47,6 +47,9 @@ class Habitat extends HiveObject {
   @HiveField(13)
   List<SensorHistory> history;
 
+  @HiveField(14)
+  int reservoirVolume; 
+
   Habitat({
     required this.id,
     required this.name,
@@ -54,15 +57,21 @@ class Habitat extends HiveObject {
     required this.tempTarget,
     required this.humidityTarget,
     required this.lightStartSec,
-    required this.lightDurationSec,
-    required this.lightIntervalSec,
+    int? lightDurationSec,
+    int? lightIntervalSec,
     required this.waterStartSec,
-    required this.waterDurationSec,
-    required this.waterIntervalSec,
+    int? waterDurationSec,
+    int? waterIntervalSec,
     DateTime? createdAt,
     bool? harvested,
-    List<SensorHistory>? history
-  }) : createdAt = createdAt ?? DateTime.now(),
-       harvested = harvested ?? false,
-       history = history ?? [];
+    List<SensorHistory>? history,
+  })  : lightDurationSec = lightDurationSec ?? 0,
+        lightIntervalSec = lightIntervalSec ?? 0,
+        waterDurationSec = waterDurationSec ?? 0,
+        waterIntervalSec = waterIntervalSec ?? 0,
+        createdAt = createdAt ?? DateTime.now(),
+        harvested = harvested ?? false,
+        reservoirVolume = 50,
+        history = history ?? [];
 }
+

@@ -45,6 +45,7 @@ class HomeScreen extends StatelessWidget {
     final appState = context.watch<MyAppState>();
     final habitats = appState.getHabitats;
     final showDot = appState.showHarvestNotification;
+    final showReservoirDot = appState.showReservoirNotification;
 
 
     return Scaffold(
@@ -71,39 +72,47 @@ class HomeScreen extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.notifications, size: 32, color: Colors.white),
                 onPressed: () {
-                  final ready = appState.harvestReadyHabitats;
-
-                  if (ready.isEmpty) return;
+                  final readyHarvest = appState.harvestReadyHabitats;
+                  final lowWaterHabitats = appState.habitats
+                      .where((h) => appState.reservoirNotified[h.id] == true)
+                      .toList();
 
                   showDialog(
                     context: context,
                     builder: (_) => AlertDialog(
-                      title: const Text("Ready to Harvest"),
+                      title: const Text("Notifications"),
                       content: SizedBox(
                         width: double.maxFinite,
                         child: ListView(
                           shrinkWrap: true,
-                          children: ready.map((h) {
-                            return Card(
-                              child: ListTile(
-                                leading: const Icon(Icons.eco, color: Colors.green),
-                                title: Text(h.name),
-                                subtitle: Text(h.greenType),
-                                trailing: const Icon(Icons.check_circle_outline),
-                                onTap: () {
-                                  context.read<MyAppState>().harvestHabitat(h);
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            );
-                          }).toList(),
+                          children: [
+                            ...readyHarvest.map((h) => ListTile(
+                                  leading: const Icon(Icons.eco, color: Colors.green),
+                                  title: Text("${h.name} is ready to harvest!"),
+                                  trailing: const Icon(Icons.check_circle_outline),
+                                  onTap: () {
+                                    appState.harvestHabitat(h);
+                                    Navigator.pop(context);
+                                  },
+                                )),
+                            ...lowWaterHabitats.map((h) => ListTile(
+                                  leading: const Icon(Icons.water_drop, color: Colors.blue),
+                                  title: Text("${h.name} reservoir is low!"),
+                                  trailing: const Icon(Icons.warning_amber),
+                                  onTap: () {
+                                    appState.acknowledgeReservoirNotification();
+                                    Navigator.pop(context);
+                                  },
+                                )),
+                          ],
                         ),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () {
+                            appState.acknowledgeReservoirNotification();
+                            appState.acknowledgeHarvestNotification();
                             Navigator.pop(context);
-                            appState.acknowledgeHarvestNotification(); 
                           },
                           child: const Text("OK"),
                         ),
@@ -112,8 +121,7 @@ class HomeScreen extends StatelessWidget {
                   );
                 },
               ),
-
-              if (showDot)
+              if (showDot || showReservoirDot)
                 Positioned(
                   right: 8,
                   top: 8,

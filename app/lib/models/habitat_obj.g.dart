@@ -23,21 +23,21 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       tempTarget: fields[3] as int,
       humidityTarget: fields[4] as int,
       lightStartSec: fields[5] as int,
-      lightDurationSec: fields[6] as int,
-      lightIntervalSec: fields[7] as int,
+      lightDurationSec: fields[6] as int?,
+      lightIntervalSec: fields[7] as int?,
       waterStartSec: fields[8] as int,
-      waterDurationSec: fields[9] as int,
-      waterIntervalSec: fields[10] as int,
+      waterDurationSec: fields[9] as int?,
+      waterIntervalSec: fields[10] as int?,
       createdAt: fields[11] as DateTime?,
       harvested: fields[12] as bool?,
       history: (fields[13] as List?)?.cast<SensorHistory>(),
-    );
+    )..reservoirVolume = fields[14] as int;
   }
 
   @override
   void write(BinaryWriter writer, Habitat obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -65,7 +65,9 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       ..writeByte(12)
       ..write(obj.harvested)
       ..writeByte(13)
-      ..write(obj.history);
+      ..write(obj.history)
+      ..writeByte(14)
+      ..write(obj.reservoirVolume);
   }
 
   @override
