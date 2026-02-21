@@ -33,6 +33,7 @@ void AutomationController::update()
     // Control actuators based on sensor readings
     controlFan(readings);
     controlMister(readings);
+    controlWater(readings);
 }
 
 void AutomationController::controlFan(const SensorReadings &readings)
@@ -108,4 +109,14 @@ void AutomationController::controlMister(const SensorReadings &readings)
             lastMisterChange = now;
         }
     }
+}
+
+void AutomationController::controlWater(const SensorReadings &readings)
+{
+    LEDStrip &leds = actuators.getLEDs();
+
+    if (readings.waterLevelLow)
+        leds.setColor(CRGB::Red);
+    else
+        leds.setColor(CRGB::Green);
 }
