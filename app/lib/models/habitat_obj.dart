@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'sensor_history_obj.dart';
+import 'decoration_obj.dart';
 
 part 'habitat_obj.g.dart';
 
@@ -50,6 +51,9 @@ class Habitat extends HiveObject {
   @HiveField(14)
   int reservoirVolume; 
 
+  @HiveField(15)
+  List<DecorationObj> decorations;
+
   Habitat({
     required this.id,
     required this.name,
@@ -65,11 +69,13 @@ class Habitat extends HiveObject {
     DateTime? createdAt,
     bool? harvested,
     List<SensorHistory>? history,
+    List<DecorationObj>? decorations,
   })  : lightDurationSec = lightDurationSec ?? 0,
         lightIntervalSec = lightIntervalSec ?? 0,
         waterDurationSec = waterDurationSec ?? 0,
         waterIntervalSec = waterIntervalSec ?? 0,
         createdAt = createdAt ?? DateTime.now(),
+        decorations = decorations ?? [],
         harvested = harvested ?? false,
         reservoirVolume = 50,
         history = history ?? [];

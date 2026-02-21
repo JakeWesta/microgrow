@@ -2,6 +2,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'habitat_obj.dart';
 import 'user_obj.dart';
 import 'sensor_history_obj.dart';
+import 'decoration_obj.dart';
+
 
 
 class Database {
@@ -11,6 +13,7 @@ class Database {
     Hive.registerAdapter(HabitatAdapter());
     Hive.registerAdapter(UserAdapter());
     Hive.registerAdapter(SensorHistoryAdapter());
+    Hive.registerAdapter(DecorationObjAdapter());
 
 
     await Hive.openBox<Habitat>('habitatsBox');

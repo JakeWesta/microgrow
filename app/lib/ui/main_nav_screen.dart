@@ -1,6 +1,6 @@
+import 'package:app/ui/greenhouse_screen.dart';
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'tomagachi_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
         page = const HomeScreen();
         break;
       case 1:
-        page = const TomagachiScreen();
+        page = const GreenhouseScreen();
         break;
       default:
         page = const Center(child: Text('Unknown page'));
@@ -39,7 +39,7 @@ class _HomePageState extends State<HomePage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.eco),
-            label: 'Garden',
+            label: 'Greenhouse',
           ),
         ],
         currentIndex: selectedIndex,
