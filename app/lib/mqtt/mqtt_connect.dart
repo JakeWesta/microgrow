@@ -146,6 +146,39 @@ class MqttService {
     );
   }
 
+  static Future<void> requestHistory({
+    required String habitatId,
+    required void Function(String payload) onMessage,
+  }) async {
+    final client = await connect();
+    final topic = 'microgrow/$habitatId/history';
+
+    client.subscribe(topic, MqttQos.atLeastOnce);
+
+    client.updates?.listen(
+      (List<MqttReceivedMessage<MqttMessage?>>? event) {
+        if (event == null || event.isEmpty) return;
+
+        final rec = event[0];
+        if (rec.topic == topic) {
+          final message = rec.payload as MqttPublishMessage;
+          final payload = MqttPublishPayload.bytesToStringAsString(
+            message.payload.message,
+          );
+
+          onMessage(payload);
+        }
+      },
+    );
+
+    client.publishMessage(
+      topic,
+      MqttQos.atLeastOnce,
+      Uint8Buffer()..addAll(utf8.encode('meow')),
+    );
+  }
+
+
 
 }
 

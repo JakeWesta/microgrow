@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../models/app_state.dart';
-import '../mqtt/mqtt_connect.dart';
-
-
+import '../models/habitat_obj.dart';
+import '../models/decoration_obj.dart';
+import '../models/database.dart';
 
 class TomagachiScreen extends StatefulWidget {
-  const TomagachiScreen({super.key});
+  final Habitat habitat;
+
+  const TomagachiScreen({super.key, required this.habitat});
 
   @override
   State<TomagachiScreen> createState() => _TomagachiScreenState();
@@ -19,11 +19,10 @@ class _TomagachiScreenState extends State<TomagachiScreen>
   late AnimationController controller;
   final Random random = Random();
 
-  List<double> baseX = [];
-  List<double> direction = [];
+  double plantX = 0;
+  double plantDirection = 1;
 
-  final double iconWidth = 50;
-
+  final double plantWidth = 50;
   Color skyColor = Colors.lightBlue[300]!;
 
   Timer? partyTimer;
@@ -36,16 +35,17 @@ class _TomagachiScreenState extends State<TomagachiScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
+
+    plantX = random.nextDouble() * 200;
+    plantDirection = random.nextBool() ? 1.0 : -1.0;
   }
 
   @override
-@override
   void dispose() {
     partyTimer?.cancel();
     controller.dispose();
     super.dispose();
   }
-
 
   IconData iconForGreenType(String type) {
     switch (type.toLowerCase()) {
@@ -59,7 +59,7 @@ class _TomagachiScreenState extends State<TomagachiScreen>
   }
 
   void triggerParty() {
-    final List<Color> partyColors = [
+    final partyColors = [
       Colors.red,
       Colors.blue,
       Colors.green,
@@ -72,136 +72,184 @@ class _TomagachiScreenState extends State<TomagachiScreen>
 
     if (isPartyOn) {
       partyTimer?.cancel();
-      partyTimer = null;
       setState(() {
         isPartyOn = false;
         skyColor = Colors.lightBlue[300]!;
       });
-    
-    final habitats = context.read<MyAppState>().getHabitats;
-    
-    for (final habitat in habitats) {
-        MqttService.actuatorPublish(
-          habitatId: habitat.id,
-          actuatorName: 'light',
-          val: 0,
-          r: 0,
-          g: 0,
-          b: 0,
-        );
-      }
     } else {
       isPartyOn = true;
-
       partyTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-        final Color c = partyColors[Random().nextInt(partyColors.length)];
-
-        setState(() => skyColor = c);
-
-        final habitats = context.read<MyAppState>().getHabitats;
-        for (final habitat in habitats) {
-          MqttService.actuatorPublish(
-            habitatId: habitat.id,
-            actuatorName: 'light',
-            val: 1,
-              r: (c.r * 255).round(),
-              g: (c.g * 255).round(),
-              b: (c.b * 255).round(),
-          );
-        }
+        setState(() => skyColor = partyColors[random.nextInt(partyColors.length)]);
       });
     }
   }
 
+  void buyDecoration(String name, int cost) {
+    final user = Database.user;
+    if (user.coins >= cost) {
+      user.coins -= cost;
+      user.save();
+
+      final decoration = DecorationObj(type: name, x: 150, y: 150);
+      widget.habitat.decorations.add(decoration);
+      widget.habitat.save();
+    }
+  }
+
+  void updateDecorationPosition(int index, Offset position) {
+    final deco = widget.habitat.decorations[index];
+    deco.x = position.dx;
+    deco.y = position.dy;
+    widget.habitat.save();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    final habitats = context.watch<MyAppState>().getHabitats;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    if (baseX.length != habitats.length) {
-      baseX = List.generate(
-          habitats.length, (i) => random.nextDouble() * (screenWidth - iconWidth));
-      direction =
-          List.generate(habitats.length, (i) => random.nextBool() ? 1.0 : -1.0);
-    }
-
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.green[700],
+        title: Row(
+          children: [
+            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
+            const SizedBox(width: 10),
+            Text(
+              ("${widget.habitat.name}'s House"),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
+      ),
+      endDrawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(child: Text('Shop')),
+            ListTile(
+              leading: const Icon(Icons.local_florist),
+              title: const Text('Flower - 5 coins'),
+              onTap: () {
+                buyDecoration('flower', 5);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
       body: AnimatedBuilder(
         animation: controller,
         builder: (context, child) {
-          for (int i = 0; i < habitats.length; i++) {
-            double x = baseX[i] + direction[i] * 2;
-            if (x < 0 || x > screenWidth - iconWidth) direction[i] *= -1;
-            baseX[i] += direction[i] * 2;
-          }
+          plantX += plantDirection * 2;
+          if (plantX < 0 || plantX > screenWidth - plantWidth) plantDirection *= -1;
+          double yOffset = sin(controller.value * pi) * 20;
 
           return Stack(
             children: [
+            
               Container(color: skyColor),
-              Positioned(
-                top: 40,
-                left: 40,
-                child: Icon(Icons.wb_sunny, size: 60, color: Colors.yellow[700]),
-              ),
-              Positioned(
-              top: 40,
-              right: 20,
-              child: ElevatedButton(
-                onPressed: triggerParty,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 159, 156, 159),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(
-                  isPartyOn ? 'Stop Party' : 'Party Time',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-              ),
-            ),
+
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 height: 120,
-                child: Container(
-                  color: Colors.brown[400],
+                child: Container(color: Colors.brown[400]),
+              ),
+
+              Positioned(
+                bottom: 120 + yOffset,
+                left: plantX,
+                child: Column(
+                  children: [
+                    Text(
+                      widget.habitat.name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black)
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Icon(
+                      iconForGreenType(widget.habitat.greenType),
+                      size: 40,
+                      color: Colors.green[700],
+                    ),
+                  ],
                 ),
               ),
-              ...List.generate(habitats.length, (index) {
-                final habitat = habitats[index];
 
-                double yOffset = sin(controller.value * pi) * 20;
-
+              ...List.generate(widget.habitat.decorations.length, (index) {
+                final deco = widget.habitat.decorations[index];
                 return Positioned(
-                  bottom: 120 + yOffset,
-                  left: baseX[index],
-                  child: Column(
-                    children: [
-                      Text(
-                        habitat.name,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                  offset: Offset(1, 1),
-                                  blurRadius: 2,
-                                  color: Colors.black)
-                            ]),
-                      ),
-                      const SizedBox(height: 4),
-                      Icon(
-                        iconForGreenType(habitat.greenType),
-                        size: 40,
-                        color: Colors.green[700],
-                      ),
-                    ],
+                  left: deco.x,
+                  top: deco.y,
+                  child: GestureDetector(
+                    onPanUpdate: (details) {
+                      updateDecorationPosition(
+                          index,
+                          Offset(
+                            deco.x + details.delta.dx,
+                            deco.y + details.delta.dy,
+                          ));
+                    },
+                    child: deco.type == 'flower'
+                        ? const Icon(Icons.local_florist, size: 40, color: Colors.pink)
+                        : const SizedBox.shrink(),
                   ),
                 );
               }),
+
+              Positioned(
+                top: 40,
+                right: 20,
+                child: ElevatedButton(
+                  onPressed: triggerParty,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 159, 156, 159),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    isPartyOn ? 'Stop Party' : 'Party Time',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                top: 40,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.monetization_on, color: Colors.amber),
+                      const SizedBox(width: 8),
+                      Text(
+                        Database.user.coins.toString(),
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           );
         },
