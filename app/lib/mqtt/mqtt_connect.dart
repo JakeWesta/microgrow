@@ -148,10 +148,10 @@ class MqttService {
 
   static Future<void> requestHistory({
     required String habitatId,
-    required void Function(String payload) onMessage,
+    required void Function(String payload) onMessage, 
   }) async {
     final client = await connect();
-    final topic = 'microgrow/$habitatId/history';
+    final topic = 'microgrow/$habitatId/refresh';
 
     client.subscribe(topic, MqttQos.atLeastOnce);
 
@@ -174,7 +174,7 @@ class MqttService {
     client.publishMessage(
       topic,
       MqttQos.atLeastOnce,
-      Uint8Buffer()..addAll(utf8.encode('meow')),
+      Uint8Buffer()..addAll(utf8.encode('1')),
     );
   }
 

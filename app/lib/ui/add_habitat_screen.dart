@@ -86,8 +86,8 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
       ),
       'Broccoli': HabitatConfig(
         greenType: 'Broccoli',
-        tempTarget: 75,
-        humidityTarget: 70,
+        tempTarget: 70,
+        humidityTarget: 8,
         lightStartSec: secSinceMidnight,
         lightDurationSec: 10, 
         lightIntervalSec: 30,

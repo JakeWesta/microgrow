@@ -87,13 +87,13 @@ class MyAppState extends ChangeNotifier {
 
   bool get hasHarvestReady {
     return habitats.any(
-      (h) => isHabitatReady(h.createdAt, h.harvested),
+      (h) => isHabitatReady(h),
     );
   }
 
   List<Habitat> get harvestReadyHabitats {
     return habitats
-        .where((h) => isHabitatReady(h.createdAt, h.harvested))
+        .where((h) => isHabitatReady(h))
         .toList();
   }
 
