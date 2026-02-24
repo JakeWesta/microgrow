@@ -1,6 +1,6 @@
 #include "persistence.h"
 
-#define READING_COUNT 3
+#define READING_COUNT 24
 
 bool PersistenceManager::isConfigured()
 {
