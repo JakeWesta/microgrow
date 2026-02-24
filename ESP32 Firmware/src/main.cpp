@@ -100,23 +100,11 @@ void setup()
             Timing(config.lightStartSec,
                    config.lightDurationSec,
                    config.lightIntervalSec));
-        scheduler->getLightSchedule().setCallbacks(
-            [=]()
-            { actuators->getLEDs().setColor(255, 255, 255); },
-            [=]()
-            { actuators->getLEDs().off(); });
-        scheduler->getLightSchedule().enable();
 
         scheduler->getWaterSchedule().setTiming(
             Timing(config.waterStartSec,
                    config.waterDurationSec,
                    config.waterIntervalSec));
-        scheduler->getWaterSchedule().setCallbacks(
-            [=]()
-            { actuators->getPump().on(); },
-            [=]()
-            { actuators->getPump().off(); });
-        scheduler->getWaterSchedule().enable();
 
         display->setGreenType(config.greenType);
         display->setGrowth(config.growth);
@@ -125,6 +113,20 @@ void setup()
     {
         Serial.println("No saved configuration - awaiting setup");
     }
+
+    scheduler->getWaterSchedule().setCallbacks(
+        [=]()
+        { actuators->getPump().on(); },
+        [=]()
+        { actuators->getPump().off(); });
+    scheduler->getWaterSchedule().enable();
+
+    scheduler->getLightSchedule().setCallbacks(
+        [=]()
+        { actuators->getLEDs().setColor(255, 255, 255); },
+        [=]()
+        { actuators->getLEDs().off(); });
+    scheduler->getLightSchedule().enable();
 
     // Initialize WiFi
     Serial.println("9. Starting WiFi...");

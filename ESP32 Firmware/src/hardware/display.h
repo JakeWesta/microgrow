@@ -26,8 +26,8 @@ public:
 
     // Screens
     void showBoot();
-    void showWiFiSetup(const String &deviceId); // Call once; stores deviceId
-    void showWiFiConnected();                   // Updates status line, keeps deviceId
+    void showWiFiSetup(const String &deviceId);
+    void showWiFiConnected();
     void showSensorData(float temp, float humidity, bool waterLow);
     void showError(const String &message);
     void showQRCode(const String &data);
@@ -42,6 +42,8 @@ public:
     void setMQTTStatus(bool connected);
 
     DisplayState getState() const { return state; }
+
+    void drawImage(const String &filename, int x, int y);
 
 private:
     Adafruit_ILI9341 tft{TFT_CS, TFT_DC, TFT_RST};
@@ -67,7 +69,6 @@ private:
     void drawRightText(const String &text, int y, uint8_t size, uint16_t color);
     void drawStatusBar();
     void drawPageHeader(const String &title, uint16_t color);
-    void drawImage(const String &filename, int x, int y);
 
     // Internal WiFi screen renderer (phase 0 = AP, 1 = connected)
     void _renderWiFiSetup(uint8_t phase);

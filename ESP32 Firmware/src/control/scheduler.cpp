@@ -26,7 +26,7 @@ void Schedule::enable()
 {
   if (state == ScheduleState::OFF)
   {
-    state = ScheduleState::IDLE;
+    state = ScheduleState::ACTIVE;
     nextStartSec = t.startSec;
     Serial.printf("Schedule %s: ENABLED\n", name);
   }

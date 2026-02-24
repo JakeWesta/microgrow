@@ -89,7 +89,6 @@ void AutomationController::controlMister(const SensorReadings &readings)
         return;
     }
 
-    // NOTE: Not correct logic for DEMO
     if (readings.humidity < targets.humidity - 5.0f)
     {
         // If humidity is sufficiently low, turn on mister
