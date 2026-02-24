@@ -98,7 +98,7 @@ void PersistenceManager::saveWaterSchedule(uint32_t start, uint32_t duration, ui
                   start, duration, interval);
 }
 
-void PersistenceManager::saveHabitatInfo(const String &type)
+void PersistenceManager::saveHabitatInfo(const String &type, const String &growth)
 {
     prefs.begin(NAMESPACE, false);
     prefs.putString(KEY_GREEN_TYPE, type);

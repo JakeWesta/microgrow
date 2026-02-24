@@ -81,6 +81,7 @@ private:
 
     // Save configuration
     void saveConfiguration();
+    void saveHabitat();
 
     // Static callback wrapper
     static void staticCallback(char *topic, byte *payload, unsigned int length);

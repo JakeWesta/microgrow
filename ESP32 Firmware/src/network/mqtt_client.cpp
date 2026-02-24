@@ -250,7 +250,7 @@ void MQTTClient::handleInit(JsonDocument &doc)
 
     // Save to NVS
     PersistenceManager storage;
-    storage.saveHabitatInfo(greenType);
+    storage.saveHabitatInfo(greenType, growth);
     storage.saveTargets(targetTemp, targetHum);
 
     initState = InitState::WAITING_FOR_SCHEDULE;
@@ -473,9 +473,16 @@ void MQTTClient::handleGrowth(JsonDocument &doc)
   {
     display->clearImg();
     display->setGrowth(growth);
+    saveHabitat();
   }
 
   Serial.printf("Growth stage: %d -> %s\n", g, growth.c_str());
+}
+
+void MQTTClient::saveHabitat()
+{
+  PersistenceManager storage;
+  storage.saveHabitatInfo(greenType, growth);
 }
 
 void MQTTClient::saveConfiguration()
@@ -485,7 +492,6 @@ void MQTTClient::saveConfiguration()
   DeviceConfig config;
   config.greenType = greenType;
   config.growth = growth;
-  Serial.printf("Saved growth: %s", growth.c_str());
 
   if (automation)
   {
