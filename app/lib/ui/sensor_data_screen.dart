@@ -4,6 +4,7 @@ import '../models/sensor_history_obj.dart';
 import '../mqtt/mqtt_connect.dart';
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
 
 class SensorDataScreen extends StatefulWidget {
@@ -394,23 +395,24 @@ Widget sensorCard(String label, String? value) {
               const SizedBox(height: 20),
 
               Column(
-                children: widget.habitat.history.map((entry) {
-                  return Card(
-                    elevation: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    child: ListTile(
-                      title: Text(
-                        entry.timestamp.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        "Temp: ${entry.temp.toStringAsFixed(1)} F | "
-                        "Humidity: ${entry.humidity.toStringAsFixed(1)} %",
-                      ),
+              children: widget.habitat.history.map((entry) {
+                final formattedDate = DateFormat('MMMM d, h:mm a').format(entry.timestamp);
+                return Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  child: ListTile(
+                    title: Text(
+                      formattedDate,  
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  );
-                }).toList(),
-              ),
+                    subtitle: Text(
+                      "Temp: ${entry.temp.toStringAsFixed(1)} F | "
+                      "Humidity: ${entry.humidity.toStringAsFixed(1)} %",
+                    ),
+                  ),
+                );
+              }).toList(),
+            )
             ],
           ),
         ),
