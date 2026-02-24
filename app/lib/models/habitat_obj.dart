@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
+import 'growth_config.dart';
 import 'sensor_history_obj.dart';
+import '../mqtt/mqtt_connect.dart';
 import 'decoration_obj.dart';
 
 part 'habitat_obj.g.dart';
@@ -49,7 +51,7 @@ class Habitat extends HiveObject {
   List<SensorHistory> history;
 
   @HiveField(14)
-  int reservoirVolume; 
+  int reservoirVolume;
 
   @HiveField(15)
   List<DecorationObj> decorations;
@@ -79,5 +81,48 @@ class Habitat extends HiveObject {
         harvested = harvested ?? false,
         reservoirVolume = 50,
         history = history ?? [];
-}
 
+  double get growthProgress {
+    final spec = growthSpecs[greenType]!;
+    final elapsed = DateTime.now().difference(createdAt);
+    return elapsed.inMilliseconds / spec.totalDuration.inMilliseconds;
+  }
+
+  GrowthStage get currentGrowthStage {
+    final spec = growthSpecs[greenType]!;
+    final progress = growthProgress;
+
+    if (progress >= spec.readyStart) {
+      return GrowthStage.ready;
+    } else if (progress >= spec.matureStart) {
+      return GrowthStage.mature;
+    } else if (progress >= spec.saplingStart) {
+      return GrowthStage.sapling;
+    } else {
+      return GrowthStage.seed;
+    }
+  }
+
+  Future<void> checkAndPublishGrowthStage() async {
+    final newStage = currentGrowthStage;
+
+    if (newStage != previousStage) {
+      previousStage = newStage;
+      await MqttService.publishGrowthStage(
+        habitatId: id,
+        stage: newStage,
+      );
+    }
+  }
+
+  Future<void> publishGrowthStage() async {
+    final newStage = currentGrowthStage;
+    await MqttService.publishGrowthStage(
+      habitatId: id,
+      stage: newStage,
+    );
+  }
+
+
+  GrowthStage previousStage = GrowthStage.seed;
+}

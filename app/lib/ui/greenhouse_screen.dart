@@ -33,13 +33,7 @@ class GreenhouseScreen extends StatelessWidget {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.lightBlue, Colors.blueAccent],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+              color: Colors.lightBlue[300]
           ),
 
           Positioned(

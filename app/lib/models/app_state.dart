@@ -3,37 +3,41 @@ import 'habitat_obj.dart';
 import 'database.dart';
 import 'growth_config.dart';
 import 'dart:async';
+import '../mqtt/mqtt_connect.dart'; 
 
 class MyAppState extends ChangeNotifier {
   List<Habitat> habitats = [];
-
   bool harvestNotified = false;
-  Map<String,bool> reservoirNotified = {}; 
+  Map<String, bool> reservoirNotified = {};
 
   MyAppState() {
     habitats = Database.habitatsBox.values.toList();
 
-    for (var h in habitats){
+    for (var h in habitats) {
       reservoirNotified[h.id] = false;
     }
 
-    Timer.periodic(const Duration(seconds: 1), (_) {
+    Timer.periodic(const Duration(seconds: 1), (_) async {
       for (var habitat in habitats) {
         final now = DateTime.now().second;
+        
         if ((now - habitat.waterStartSec) % habitat.waterIntervalSec == 0) {
           subtractWater(habitat);
+        }
+
+        if (habitat.currentGrowthStage != GrowthStage.ready){
+          await habitat.checkAndPublishGrowthStage();
         }
       }
 
       checkReservoirWarnings();
       notifyListeners();
     });
-
   }
 
-  final double reservoirVolume = 50; 
-  final double flowRate = 100 / 60; 
-  final double lowThreshold = 10; 
+  final double reservoirVolume = 50;
+  final double flowRate = 100 / 60;
+  final double lowThreshold = 10;
 
   double waterPerSession(double waterDurationSec) {
     return waterDurationSec * flowRate;
@@ -68,12 +72,22 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   void subtractWater(Habitat habitat) {
     reservoirLevels.putIfAbsent(habitat.id, () => reservoirVolume);
     final pumped = waterPerSession(habitat.waterDurationSec.toDouble());
     reservoirLevels[habitat.id] = (reservoirLevels[habitat.id]! - pumped).clamp(0, reservoirVolume);
+  }
+
+  void updateGrowthStage(Habitat habitat) async {
+    final newStage = habitat.currentGrowthStage;
+
+    if (newStage != habitat.previousStage) {
+      habitat.previousStage = newStage; 
+      await MqttService.publishGrowthStage(
+        habitatId: habitat.id,
+        stage: newStage,
+      );
+    }
   }
 
   List<Habitat> get getHabitats => habitats;
@@ -112,12 +126,11 @@ class MyAppState extends ChangeNotifier {
     }
   }
 
-  bool get showReservoirNotification =>reservoirNotified.values.any((notified) => notified);
+  bool get showReservoirNotification => reservoirNotified.values.any((notified) => notified);
 
   void acknowledgeReservoirNotification([String? habitatId]) {
     if (habitatId != null) {
       reservoirNotified[habitatId] = false;
-
       reservoirLevels[habitatId] = reservoirVolume;
     } else {
       for (var key in reservoirNotified.keys) {
@@ -127,8 +140,6 @@ class MyAppState extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-
 
   Future<void> deleteHabitat(Habitat habitat) async {
     await Database.habitatsBox.delete(habitat.id);

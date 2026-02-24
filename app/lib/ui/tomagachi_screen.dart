@@ -5,6 +5,7 @@ import '../models/habitat_obj.dart';
 import '../models/decoration_obj.dart';
 import '../models/database.dart';
 import '../models/growth_config.dart'; 
+import '../mqtt/mqtt_connect.dart';
 
 class TomagachiScreen extends StatefulWidget {
   final Habitat habitat;
@@ -38,7 +39,6 @@ class _TomagachiScreenState extends State<TomagachiScreen>
   @override
   void initState() {
     super.initState();
-
     controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -46,13 +46,20 @@ class _TomagachiScreenState extends State<TomagachiScreen>
 
     plantX = random.nextDouble() * 200;
     plantDirection = random.nextBool() ? 1.0 : -1.0;
-
     currentStage = getGrowthStage(widget.habitat);
 
     spriteTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         spriteFrame = spriteFrame == 1 ? 2 : 1;
-        currentStage = getGrowthStage(widget.habitat);
+        final newStage = getGrowthStage(widget.habitat);
+      
+        if (newStage != currentStage) {
+          currentStage = newStage;
+          MqttService.publishGrowthStage(
+            habitatId: widget.habitat.id,
+            stage: currentStage,
+          );
+        }
       });
     });
   }
