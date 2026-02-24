@@ -4,6 +4,7 @@
 #include <PubSubClient.h>
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
+#include "../hardware/display.h"
 
 // Forward declarations
 class SensorManager;
@@ -44,6 +45,7 @@ public:
     void setActuators(ActuatorManager *act) { actuators = act; }
     void setScheduler(Scheduler *sched) { scheduler = sched; }
     void setAutomation(AutomationController *auto_) { automation = auto_; }
+    void setDisplay(DisplayManager *disp_) { display = disp_; }
 
 private:
     MQTTClient(const String &deviceId);
@@ -54,6 +56,7 @@ private:
     PubSubClient client;
     String deviceId;
     String greenType;
+    String growth;
 
     InitState initState;
     uint32_t lastReconnectAttempt;
@@ -63,11 +66,13 @@ private:
     ActuatorManager *actuators;
     Scheduler *scheduler;
     AutomationController *automation;
+    DisplayManager *display;
 
     // Message handlers
     void handleInit(JsonDocument &doc);
     void handleOverride(JsonDocument &doc);
-    void handleRefresh();
+    void handleRefresh(JsonDocument &doc);
+    void handleGrowth(JsonDocument &doc);
     void messageCallback(char *topic, byte *payload, unsigned int length);
 
     // Subscription management

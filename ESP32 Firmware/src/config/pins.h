@@ -22,3 +22,6 @@
 #define TFT_MOSI 23
 #define TFT_SCLK 18
 #define TFT_MISO 19
+
+// SD Card
+#define SD_CS 13

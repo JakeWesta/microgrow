@@ -1,13 +1,12 @@
 #include "persistence.h"
 
-#define READING_COUNT 30
+#define READING_COUNT 3
 
-bool PersistenceManager::isConfigured() const
+bool PersistenceManager::isConfigured()
 {
-    Preferences p;
-    p.begin(NAMESPACE, true);
-    bool configured = p.getBool(KEY_INIT, false);
-    p.end();
+    prefs.begin(NAMESPACE, true);
+    bool configured = prefs.getBool(KEY_INIT, false);
+    prefs.end();
     return configured;
 }
 
@@ -16,6 +15,7 @@ void PersistenceManager::saveConfig(const DeviceConfig &config)
     prefs.begin(NAMESPACE, false);
     prefs.putBool(KEY_INIT, true);
     prefs.putString(KEY_GREEN_TYPE, config.greenType);
+    prefs.putString(KEY_GROWTH, config.growth);
     prefs.putFloat(KEY_TARGET_TEMP, config.targetTemp);
     prefs.putFloat(KEY_TARGET_HUM, config.targetHumidity);
     prefs.putULong(KEY_LIGHT_START, config.lightStartSec);

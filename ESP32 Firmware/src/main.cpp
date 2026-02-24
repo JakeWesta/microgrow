@@ -85,6 +85,7 @@ void setup()
     mqttClient->setActuators(actuators);
     mqttClient->setScheduler(scheduler);
     mqttClient->setAutomation(automation);
+    mqttClient->setDisplay(display);
 
     if (storage->isConfigured())
     {
@@ -117,7 +118,8 @@ void setup()
             { actuators->getPump().off(); });
         scheduler->getWaterSchedule().enable();
 
-        display->showDeviceInfo(wifiMgr->getDeviceId(), config.greenType);
+        display->setGreenType(config.greenType);
+        display->setGrowth(config.growth);
     }
     else
     {
@@ -175,7 +177,7 @@ void sensorTask(void *param)
     {
         SensorReadings readings = sensors->read();
 
-        if (readings.valid)
+        if (wifiMgr->isConnected() && mqttClient->isInitialized() /*&& readings.valid*/)
         {
             display->showSensorData(
                 readings.temperature,
@@ -239,12 +241,14 @@ void networkTask(void *param)
     {
         if (!wifiMgr->isConnected())
         {
-            Serial.println("WiFi disconnected, attempting reconnect...");
             display->setWiFiStatus(false);
+            Serial.println("WiFi disconnected, attempting reconnect...");
             wifiMgr->reconnect();
         }
         else
         {
+            // setWiFiStatus now automatically upgrades the WiFi-setup screen
+            // to "WiFi OK - Awaiting config..." when we're still in setup state.
             display->setWiFiStatus(true);
         }
 
@@ -277,7 +281,6 @@ void networkTask(void *param)
                         }
                     }
 
-                    // Save hourly readings to NVS for historical data - only if MQTT is connected to ensure time is valid
                     time_t now_t;
                     time(&now_t);
                     if (now_t - lastReading >= READING_SAVE_INTERVAL_S)

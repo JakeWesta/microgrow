@@ -18,7 +18,7 @@ MQTTClient::MQTTClient(const String &deviceId)
     : client(espClient), deviceId(deviceId),
       initState(InitState::WAITING_FOR_ID), lastReconnectAttempt(0),
       lastPublish(0), actuators(nullptr), scheduler(nullptr),
-      automation(nullptr)
+      automation(nullptr), display(nullptr), growth("seed")
 {
 
   instance = this;
@@ -36,6 +36,7 @@ bool MQTTClient::begin()
     // Load the greenType for reference
     DeviceConfig config = storage.loadConfig();
     greenType = config.greenType;
+    growth = config.growth;
   }
   else
   {
@@ -123,8 +124,11 @@ void MQTTClient::subscribeToInitTopics()
 void MQTTClient::subscribeToHabitatTopics()
 {
   String overrideTopic = "microgrow/" + deviceId + "/override";
+  String refreshTopic = "microgrow/" + deviceId + "/refresh";
+  String growthTopic = "microgrow/" + deviceId + "/growth";
   client.subscribe(overrideTopic.c_str());
-  Serial.printf("Subscribed to: %s\n", overrideTopic.c_str());
+  client.subscribe(refreshTopic.c_str());
+  client.subscribe(growthTopic.c_str());
 }
 
 bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow,
@@ -209,7 +213,14 @@ void MQTTClient::messageCallback(char *topic, byte *payload,
 
   if (topicStr.endsWith("/refresh"))
   {
-    handleRefresh();
+    handleRefresh(doc);
+    return;
+  }
+
+  if (topicStr.endsWith("/growth"))
+  {
+    handleGrowth(doc);
+    return;
   }
 }
 
@@ -230,6 +241,11 @@ void MQTTClient::handleInit(JsonDocument &doc)
     {
       automation->setTargets(targetTemp, targetHum);
       automation->enable();
+    }
+
+    if (display)
+    {
+      display->setGreenType(greenType);
     }
 
     // Save to NVS
@@ -405,33 +421,61 @@ void MQTTClient::handleOverride(JsonDocument &doc)
   }
 }
 
-void MQTTClient::handleRefresh()
+void MQTTClient::handleRefresh(JsonDocument &doc)
 {
+  if (!doc["meow"].is<int>())
+  {
+    return;
+  }
   PersistenceManager storage;
   uint8_t readingCount = storage.getReadingCount();
   StoredReading *readings = new StoredReading[readingCount];
   storage.getAllReadings(readings);
 
-  JsonDocument doc;
-  JsonArray array = doc.to<JsonArray>();
+  String topic = "microgrow/" + deviceId + "/refresh";
+  Serial.printf("Refresh publish topic: %s\n", topic.c_str());
 
   char timeStr[20];
   for (uint8_t i = 0; i < readingCount; i++)
   {
-    JsonObject obj = array.add<JsonObject>();
+    JsonDocument msgDoc;
+    JsonArray wrapper = msgDoc.to<JsonArray>();
+    JsonObject obj = wrapper.add<JsonObject>();
+    Serial.println("Readings:");
+    Serial.printf(" temperature: %f\n", readings[i].temperature);
     obj["temp"] = readings[i].temperature;
     obj["humidity"] = readings[i].humidity;
     struct tm *ti = localtime(&readings[i].timestamp);
     strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", ti);
     obj["timestamp"] = timeStr;
-  }
 
-  String jsonString;
-  serializeJson(doc, jsonString);
-  client.publish(("microgrow/" + deviceId + "/refresh").c_str(), jsonString.c_str());
+    String jsonString;
+    serializeJson(msgDoc, jsonString);
+    client.publish(topic.c_str(), jsonString.c_str());
+  }
 
   delete[] readings;
   storage.clearReadings();
+}
+
+void MQTTClient::handleGrowth(JsonDocument &doc)
+{
+  int32_t g = doc["growthStage"].as<int32_t>();
+
+  if (g == 1)
+    growth = "sapling";
+  else if (g == 2)
+    growth = "grown";
+  else
+    growth = "seed";
+
+  if (display)
+  {
+    display->clearImg();
+    display->setGrowth(growth);
+  }
+
+  Serial.printf("Growth stage: %d -> %s\n", g, growth.c_str());
 }
 
 void MQTTClient::saveConfiguration()
@@ -440,6 +484,8 @@ void MQTTClient::saveConfiguration()
 
   DeviceConfig config;
   config.greenType = greenType;
+  config.growth = growth;
+  Serial.printf("Saved growth: %s", growth.c_str());
 
   if (automation)
   {

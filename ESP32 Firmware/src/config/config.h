@@ -14,7 +14,7 @@
 #define MQTT_RECONNECT_DELAY_MS 5000
 #define MQTT_KEEPALIVE_S 15
 #define MQTT_SOCKET_TIMEOUT_S 5
-#define MQTT_PUBLISH_INTERVAL_MS 5000
+#define MQTT_PUBLISH_INTERVAL_MS 3000
 
 // Task Configuration
 #define SENSOR_READ_INTERVAL_MS 2000
@@ -30,8 +30,8 @@
 #define NTP_SERVER_2 "time.nist.gov"
 
 // Display
-#define TFT_WIDTH 240
-#define TFT_HEIGHT 320
+#define TFT_WIDTH 320
+#define TFT_HEIGHT 240
 #define TFT_ROTATION 1
 #define LED_STRIP_BRIGHTNESS 50
 
@@ -52,4 +52,4 @@
 #define SERIAL_BAUD 115200
 
 // Historical Data
-#define READING_SAVE_INTERVAL_S 3600 // 1 hour
+#define READING_SAVE_INTERVAL_S 3

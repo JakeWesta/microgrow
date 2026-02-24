@@ -14,6 +14,7 @@ struct StoredReading
 struct DeviceConfig
 {
     String greenType;
+    String growth;
     float targetTemp;
     float targetHumidity;
     uint32_t lightStartSec;
@@ -32,7 +33,7 @@ public:
     PersistenceManager() = default;
 
     // Configuration
-    bool isConfigured() const;
+    bool isConfigured();
     void saveConfig(const DeviceConfig &config);
     DeviceConfig loadConfig();
     void clearConfig();
@@ -55,6 +56,7 @@ private:
     static constexpr const char *NAMESPACE = "microgrow";
     static constexpr const char *KEY_INIT = "init";
     static constexpr const char *KEY_GREEN_TYPE = "greenType";
+    static constexpr const char *KEY_GROWTH = "growth";
     static constexpr const char *KEY_TARGET_TEMP = "tTemp";
     static constexpr const char *KEY_TARGET_HUM = "tHumidity";
     static constexpr const char *KEY_LIGHT_START = "light_start";
