@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
         onTap: (value) {
           setState(() => selectedIndex = value);
         },
-        backgroundColor: Color.fromARGB(255, 82, 175, 88), 
+        backgroundColor: Colors.green[700], 
         selectedItemColor: Color.fromARGB(255, 134, 245, 153), 
         unselectedItemColor: Colors.white, 
         selectedLabelStyle: const TextStyle(

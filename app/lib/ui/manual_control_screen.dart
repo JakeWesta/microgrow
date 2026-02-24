@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/habitat_obj.dart';
 import '../mqtt/mqtt_connect.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 
 class ManualControlScreen extends StatefulWidget {

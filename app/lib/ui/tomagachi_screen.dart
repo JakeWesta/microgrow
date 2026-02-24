@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../models/habitat_obj.dart';
 import '../models/decoration_obj.dart';
 import '../models/database.dart';
+import '../models/growth_config.dart'; 
+import '../mqtt/mqtt_connect.dart';
 
 class TomagachiScreen extends StatefulWidget {
   final Habitat habitat;
@@ -19,10 +21,16 @@ class _TomagachiScreenState extends State<TomagachiScreen>
   late AnimationController controller;
   final Random random = Random();
 
+  GrowthStage currentStage = GrowthStage.seed;
+  int spriteFrame = 1;
+  Timer? spriteTimer;
+
   double plantX = 0;
   double plantDirection = 1;
 
-  final double plantWidth = 50;
+  final double plantWidth = 160; 
+  final double plantHeight = 160;
+
   Color skyColor = Colors.lightBlue[300]!;
 
   Timer? partyTimer;
@@ -38,24 +46,48 @@ class _TomagachiScreenState extends State<TomagachiScreen>
 
     plantX = random.nextDouble() * 200;
     plantDirection = random.nextBool() ? 1.0 : -1.0;
+    currentStage = getGrowthStage(widget.habitat);
+
+    spriteTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        spriteFrame = spriteFrame == 1 ? 2 : 1;
+        final newStage = getGrowthStage(widget.habitat);
+      
+        if (newStage != currentStage) {
+          currentStage = newStage;
+          MqttService.publishGrowthStage(
+            habitatId: widget.habitat.id,
+            stage: currentStage,
+          );
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
     partyTimer?.cancel();
+    spriteTimer?.cancel();
     controller.dispose();
     super.dispose();
   }
 
-  IconData iconForGreenType(String type) {
-    switch (type.toLowerCase()) {
-      case 'basil':
-        return Icons.grass;
-      case 'broccoli':
-        return Icons.local_florist;
-      default:
-        return Icons.spa;
+  String spriteAsset(Habitat habitat, GrowthStage stage, int frame) {
+    final type = habitat.greenType.toLowerCase();
+    String stageName;
+    switch(stage) {
+      case GrowthStage.seed:
+        stageName = 'seed';
+        break;
+      case GrowthStage.sapling:
+        stageName = 'sapling';
+        break;
+      case GrowthStage.mature:
+      case GrowthStage.ready:
+        stageName = 'grown';
+        break;
     }
+    return 'assets/sprites/$type-$stageName-$frame.png';
   }
 
   void triggerParty() {
@@ -150,6 +182,8 @@ class _TomagachiScreenState extends State<TomagachiScreen>
           if (plantX < 0 || plantX > screenWidth - plantWidth) plantDirection *= -1;
           double yOffset = sin(controller.value * pi) * 20;
 
+          currentStage = getGrowthStage(widget.habitat);
+
           return Stack(
             children: [
             
@@ -180,10 +214,10 @@ class _TomagachiScreenState extends State<TomagachiScreen>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Icon(
-                      iconForGreenType(widget.habitat.greenType),
-                      size: 40,
-                      color: Colors.green[700],
+                    Image.asset(
+                      spriteAsset(widget.habitat, currentStage, spriteFrame),
+                      width: plantWidth,
+                      height: plantHeight,
                     ),
                   ],
                 ),

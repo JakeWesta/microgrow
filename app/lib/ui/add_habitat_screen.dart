@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
 import '../models/habitat_obj.dart';
-import 'package:uuid/uuid.dart';
 import '../mqtt/mqtt_connect.dart';
 
 class HabitatConfig {
@@ -86,13 +85,13 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
       ),
       'Broccoli': HabitatConfig(
         greenType: 'Broccoli',
-        tempTarget: 75,
-        humidityTarget: 70,
+        tempTarget: 70,
+        humidityTarget: 8,
         lightStartSec: secSinceMidnight,
         lightDurationSec: 10, 
-        lightIntervalSec: 30,
+        lightIntervalSec: 15,
         waterStartSec: secSinceMidnight,
-        waterDurationSec: 6, 
+        waterDurationSec: 5, 
         waterIntervalSec: 15, 
       ),
     };

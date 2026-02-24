@@ -3,6 +3,7 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 import 'dart:convert';
 import 'package:typed_data/typed_data.dart';
 import '../ui/add_habitat_screen.dart';
+import '../models/growth_config.dart';
 
 // TODO: Implement class to support MQTT connection and 
 // subcribing to topics 
@@ -148,10 +149,10 @@ class MqttService {
 
   static Future<void> requestHistory({
     required String habitatId,
-    required void Function(String payload) onMessage,
+    required void Function(String payload) onMessage, 
   }) async {
     final client = await connect();
-    final topic = 'microgrow/$habitatId/history';
+    final topic = 'microgrow/$habitatId/refresh';
 
     client.subscribe(topic, MqttQos.atLeastOnce);
 
@@ -171,10 +172,42 @@ class MqttService {
       },
     );
 
+    final msg = jsonEncode({'meow': 1});
     client.publishMessage(
       topic,
       MqttQos.atLeastOnce,
-      Uint8Buffer()..addAll(utf8.encode('meow')),
+      Uint8Buffer()..addAll(utf8.encode(msg)),
+    );
+  }
+
+  static Future<void> publishGrowthStage({
+    required String habitatId,
+    required GrowthStage stage,
+  }) async {
+    final client = await connect();
+    final topic = 'microgrow/$habitatId/growth';
+    int stageValue = 0; 
+
+    switch (stage) {
+      case GrowthStage.sapling:
+        stageValue = 1;
+        break;
+      case GrowthStage.mature:
+        stageValue = 2;
+        break;
+      case GrowthStage.ready:
+        stageValue = 2;
+        break;
+      default:
+        stageValue = 0;
+        break;
+    }
+
+    final msg = jsonEncode({'growthStage': stageValue});
+    client.publishMessage(
+      topic,
+      MqttQos.atLeastOnce,
+      Uint8Buffer()..addAll(utf8.encode(msg)),
     );
   }
 

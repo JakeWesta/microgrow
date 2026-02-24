@@ -6,6 +6,7 @@ import 'add_habitat_screen.dart';
 import '../models/habitat_obj.dart';
 import 'manual_control_screen.dart';
 import '../mqtt/mqtt_connect.dart';
+import '../models/growth_config.dart';
 
 
 void showDeleteConfirm(BuildContext context, Habitat habitat) {
@@ -50,7 +51,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.from(alpha: 1, red: 0.22, green: 0.557, blue: 0.235),
+        backgroundColor: Colors.green[700],
         title: Row(
           children: [
             Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
@@ -160,7 +161,7 @@ class HomeScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(220, 80), 
                   padding: const EdgeInsets.all(16),
-                  backgroundColor: Color.fromARGB(255, 82, 175, 88)
+                  backgroundColor: Colors.green[700]
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -189,50 +190,109 @@ class HomeScreen extends StatelessWidget {
                     itemCount: habitats.length,
                     itemBuilder: (context, index) {
                       final habitat = habitats[index];
-                      return Card(
-                          child: ListTile(
-                            title: Text(habitat.name),
-                            subtitle: Text('Type: ${habitat.greenType}'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // MANUAL BUTTON
-                                IconButton(
-                                  icon: const Icon(Icons.play_arrow_sharp),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ManualControlScreen(habitat: habitat),
-                                      ),
-                                    );
-                                  },
-                                ),
 
-                                // SENSOR BUTTON
-                                IconButton(
-                                  icon: const Icon(Icons.water_damage_outlined),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => SensorDataScreen(habitat: habitat),
-                                      ),
-                                    );
-                                  },
-                                ),
+                      final progress = getHabitatProgress(habitat); 
+                      final stage = getGrowthStage(habitat);
 
-                                // DELETE BUTTON
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  onPressed: () {
-                                    showDeleteConfirm(context, habitat);
-                                  },
-                                ),
-                              ],
-                            ), 
-                          ),
-                        );
+                      Color progressColor;
+                      switch (stage) {
+                        case GrowthStage.seed:
+                          progressColor = Colors.green[200]!;
+                          break;
+                        case GrowthStage.sapling:
+                          progressColor = Colors.green[400]!;
+                          break;
+                        case GrowthStage.mature:
+                          progressColor = Colors.green[600]!;
+                          break;
+                        case GrowthStage.ready:
+                          progressColor = Colors.green[800]!;
+                          break;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeInOut,
+                          builder: (context, animatedProgress, child) {
+                            return Card(
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: LinearProgressIndicator(
+                                        value: animatedProgress,
+                                        backgroundColor: const Color.fromARGB(255, 186, 222, 174),
+                                        valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                                        minHeight: double.infinity,
+                                      ),
+                                    ),
+                                  ),
+                                  ListTile(
+                                    title: Text(
+                                      habitat.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color:  Color.fromRGBO(255, 255, 255, 1),
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      'Type: ${habitat.greenType}',
+                                      style: const TextStyle(color:  Color.fromARGB(255, 255, 255, 255)),
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // MANUAL BUTTON
+                                        IconButton(
+                                          icon: const Icon(Icons.play_arrow_sharp,
+                                              color:   Color.fromARGB(255, 85, 192, 102)) ,
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    ManualControlScreen(habitat: habitat),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        // SENSOR BUTTON
+                                        IconButton(
+                                          icon: const Icon(Icons.water_damage_outlined,
+                                              color: Color.fromARGB(255, 85, 192, 102)),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    SensorDataScreen(habitat: habitat),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        // DELETE BUTTON
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, color:  Color.fromARGB(255, 85, 192, 102)),
+                                          onPressed: () {
+                                            showDeleteConfirm(context, habitat);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      );
                     },
                   ),
                 ),
