@@ -152,6 +152,36 @@ void LEDStrip::off()
     setColor(CRGB::Black);
 }
 
+void LEDStrip::flash(CRGB color)
+{
+    // Save current color and state
+    CRGB previousColor = currentColor;
+    bool wasOn = ledOn;         // TODO: Might need to change this with current logic, double check
+
+    // Set new color to flash
+    currentColor = color;
+
+    // Flash LEDs twice
+    setColor(color);
+    delay(300);
+    off();
+    delay(300);
+
+    setColor(color);
+    delay(300);
+    off();
+    delay(300);
+
+    // Restore previous color
+    setColor(previousColor);
+
+    // Restore previous state
+    if (wasOn)
+    {
+        on();
+    }
+}
+
 // ============================================================================
 // Actuator Manager
 // ============================================================================

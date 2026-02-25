@@ -144,6 +144,9 @@ void setup()
     mqttClient->begin();
     yield();
 
+    // Flash LEDs teal on successful WiFi/MQTT setup
+    actuators->getLEDs().flash(CRGB::Teal);
+
     // Start FreeRTOS tasks
     Serial.println("11. Creating FreeRTOS tasks...");
     xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
@@ -151,6 +154,8 @@ void setup()
     xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
 
+    // Flash LEDs green when setup is complete
+    actuators->getLEDs().flash(CRGB::Green);
     Serial.println("\n=== MicroGrow Ready ===\n");
 }
 
@@ -185,6 +190,12 @@ void sensorTask(void *param)
                 readings.temperature,
                 readings.humidity,
                 readings.waterLevelLow);
+        }
+
+        if (readings.waterLevelLow)
+        {
+            // Flash LEDs dark blue if water level is low
+            actuators->getLEDs().flash(CRGB::DarkBlue);         // TODO: Test this
         }
 
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));
@@ -245,6 +256,9 @@ void networkTask(void *param)
         {
             display->setWiFiStatus(false);
             Serial.println("WiFi disconnected, attempting reconnect...");
+
+            // Flash LEDs orange while trying to reconnect
+            actuators->getLEDs().flash(CRGB::Orange4);
             wifiMgr->reconnect();
         }
         else
@@ -267,7 +281,7 @@ void networkTask(void *param)
                 mqttClient->loop();
 
                 if (mqttClient->isInitialized())
-                {
+                {   
                     TickType_t now = xTaskGetTickCount();
                     if (now - lastPublish > pdMS_TO_TICKS(MQTT_PUBLISH_INTERVAL_MS))
                     {

@@ -79,6 +79,7 @@ public:
     void write(uint8_t brightness); // 0-255
     void on() override;
     void off() override;
+    void flash(CRGB color);
     const char *getName() const override { return "LED Strip"; }
 
     void setColor(uint8_t r, uint8_t g, uint8_t b);
