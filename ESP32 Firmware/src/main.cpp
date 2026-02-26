@@ -192,12 +192,6 @@ void sensorTask(void *param)
                 readings.waterLevelLow);
         }
 
-        if (readings.waterLevelLow)
-        {
-            // Flash LEDs dark blue if water level is low
-            actuators->getLEDs().flash(CRGB::DarkBlue);         // TODO: Test this
-        }
-
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));
     }
 }
