@@ -33,6 +33,7 @@ void AutomationController::update()
     // Control actuators based on sensor readings
     controlFan(readings);
     controlMister(readings);
+    controlLED(readings);
 }
 
 void AutomationController::controlFan(const SensorReadings &readings)
@@ -107,4 +108,26 @@ void AutomationController::controlMister(const SensorReadings &readings)
             lastMisterChange = now;
         }
     }
+}
+
+void AutomationController::controlLED(const SensorReadings &readings)       // TODO: Test this
+{
+    LEDStrip &leds = actuators.getLEDs();
+    Mister &mister = actuators.getMister();
+    WaterPump &pump = actuators.getPump();
+
+    // Water level LOW --> Flash LEDs dark blue
+    if (readings.waterLevelLow)
+    {
+        leds.flash(CRGB::DarkBlue);
+    }
+
+    // Water pump ON --> Flash LEDs cyan
+    else if (pump.isRunning())
+    {
+        leds.flash(CRGB::Cyan);
+    }
+
+    // other feedback colors
+
 }
