@@ -352,12 +352,21 @@ void MQTTClient::handleOverride(JsonDocument &doc)
     WaterPump &pump = actuators->getPump();
     if (enable)
     {
+      uint8_t value = doc["value"] | 1; // non-zero means ON
+      pump.setManualOverride(true);
+
       if (scheduler)
         scheduler->getWaterSchedule().pause();
 
-      pump.on();
-      delay(2000); // Run for 2 seconds
+      if (value)
+        pump.on();
+      else
+        pump.off();
+    }
+    else
+    {
       pump.off();
+      pump.setManualOverride(false);
 
       if (scheduler)
         scheduler->getWaterSchedule().resume();
