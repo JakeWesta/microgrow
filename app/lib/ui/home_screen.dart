@@ -227,6 +227,9 @@ class HomeScreen extends StatelessWidget {
                           break;
                       }
 
+                      final inBlackout = habitat.blackoutDuration > 0 &&
+                      DateTime.now().difference(habitat.createdAt).inSeconds < habitat.blackoutDuration;
+
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: TweenAnimationBuilder<double>(
@@ -243,12 +246,19 @@ class HomeScreen extends StatelessWidget {
                                   Positioned.fill(
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
-                                      child: LinearProgressIndicator(
-                                        value: animatedProgress,
-                                        backgroundColor: const Color.fromARGB(255, 186, 222, 174),
-                                        valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                                        minHeight: double.infinity,
-                                      ),
+                                      child: inBlackout
+                                      ? LinearProgressIndicator(
+                                          value: animatedProgress,
+                                          backgroundColor: Colors.grey[900],
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[800]!),
+                                          minHeight: double.infinity,
+                                        )
+                                      : LinearProgressIndicator(
+                                          value: animatedProgress,
+                                          backgroundColor: const Color.fromARGB(255, 186, 222, 174),
+                                          valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                                          minHeight: double.infinity,
+                                        ),
                                     ),
                                   ),
                                   ListTile(
