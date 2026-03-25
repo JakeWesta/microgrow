@@ -112,7 +112,7 @@ class MqttService {
       'blackout': 0
     });
 
-    client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
+    client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)), retain: true);
   }
 
   static Future<void> actuatorPublish({required String habitatId,  required String actuatorName, 
