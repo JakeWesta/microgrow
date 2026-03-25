@@ -44,9 +44,6 @@ bool DisplayManager::begin()
     delay(10);
     tft.setRotation(TFT_ROTATION);
     clear();
-    Serial.println("Display initialized");
-    Serial.printf("Display ID: 0x%X\n", tft.readcommand8(ILI9341_RDID1));
-    Serial.printf("Display Status: 0x%X\n", tft.readcommand8(ILI9341_RDMODE));
     return true;
 }
 
@@ -285,7 +282,6 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
         last_animation_ms = now;
         int imgWidth = 0, imgHeight = 0;
         String filename = getFilename();
-        Serial.printf("filename: %s\n", filename.c_str());
         reader.bmpDimensions(filename.c_str(), &imgWidth, &imgHeight);
 
         int imgX = (TFT_WIDTH - imgWidth) / 2;
@@ -373,5 +369,4 @@ void DisplayManager::setMQTTStatus(bool connected)
 void DisplayManager::drawImage(const String &filename, int x, int y)
 {
     ImageReturnCode stat = reader.drawBMP(filename.c_str(), tft, x, y);
-    Serial.printf("Status: %d\n", stat);
 }

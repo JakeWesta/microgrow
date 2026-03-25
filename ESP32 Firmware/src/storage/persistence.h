@@ -23,8 +23,8 @@ struct DeviceConfig
     uint32_t waterStartSec;
     uint32_t waterDurationSec;
     uint32_t waterIntervalSec;
-    bool valid;
-    DeviceConfig() : valid(false) {}
+    bool blackout;
+    DeviceConfig() = default;
 };
 
 class PersistenceManager
@@ -36,7 +36,7 @@ public:
     bool isConfigured();
     void saveConfig(const DeviceConfig &config);
     DeviceConfig loadConfig();
-    void clearConfig();
+    void clear();
 
     // Readings
     void saveReading(const StoredReading &reading);
@@ -50,6 +50,7 @@ public:
     void saveLightSchedule(uint32_t start, uint32_t duration, uint32_t interval);
     void saveWaterSchedule(uint32_t start, uint32_t duration, uint32_t interval);
     void saveHabitatInfo(const String &type, const String &growth);
+    void setBlackout(bool blackout);
 
 private:
     Preferences prefs;
@@ -67,4 +68,5 @@ private:
     static constexpr const char *KEY_WATER_INT = "water_int";
     static constexpr const char *KEY_BUF_HEAD = "buf_head";
     static constexpr const char *KEY_BUF_COUNT = "buf_count";
+    static constexpr const char *KEY_BLACKOUT = "blackout";
 };

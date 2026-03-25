@@ -126,9 +126,13 @@ void MQTTClient::subscribeToHabitatTopics()
   String overrideTopic = "microgrow/" + deviceId + "/override";
   String refreshTopic = "microgrow/" + deviceId + "/refresh";
   String growthTopic = "microgrow/" + deviceId + "/growth";
+  String deleteTopic = "microgrow/" + deviceId + "/delete";
+  String blackoutTopic = "microgrow/" + deviceId + "/blackout";
   client.subscribe(overrideTopic.c_str());
   client.subscribe(refreshTopic.c_str());
   client.subscribe(growthTopic.c_str());
+  client.subscribe(deleteTopic.c_str());
+  client.subscribe(blackoutTopic.c_str());
 }
 
 bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow,
@@ -222,6 +226,18 @@ void MQTTClient::messageCallback(char *topic, byte *payload,
     handleGrowth(doc);
     return;
   }
+
+  if (topicStr.endsWith("/delete"))
+  {
+    handleDelete();
+    return;
+  }
+
+  if (topicStr.endsWith("/blackout"))
+  {
+    handleBlackout(doc);
+    return;
+  }
 }
 
 void MQTTClient::handleInit(JsonDocument &doc)
@@ -233,6 +249,9 @@ void MQTTClient::handleInit(JsonDocument &doc)
 
     float targetTemp = doc["target"]["temp"].as<float>();
     float targetHum = doc["target"]["humidity"].as<float>();
+    blackout = doc["blackout"].as<int>() != 0;
+    if (blackout)
+      scheduler->getLightSchedule().pause();
 
     Serial.printf("Received greenType: %s\n", greenType.c_str());
 
@@ -488,6 +507,27 @@ void MQTTClient::handleGrowth(JsonDocument &doc)
   Serial.printf("Growth stage: %d -> %s\n", g, growth.c_str());
 }
 
+void MQTTClient::handleDelete(void)
+{
+  PersistenceManager storage;
+  storage.clear();
+  scheduler->getLightSchedule().disable();
+  scheduler->getWaterSchedule().disable();
+  initState = InitState::WAITING_FOR_ID;
+  subscribeToInitTopics();
+}
+
+void MQTTClient::handleBlackout(JsonDocument &doc)
+{
+  if (doc["blackout"].is<int>())
+  {
+    blackout = false;
+    scheduler->getLightSchedule().resume();
+    PersistenceManager storage;
+    storage.setBlackout(blackout);
+  }
+}
+
 void MQTTClient::saveHabitat()
 {
   PersistenceManager storage;
@@ -523,6 +563,6 @@ void MQTTClient::saveConfiguration()
     config.waterIntervalSec = water.intervalSec;
   }
 
-  config.valid = true;
+  config.blackout = blackout;
   storage.saveConfig(config);
 }
