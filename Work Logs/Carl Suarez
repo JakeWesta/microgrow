@@ -8,3 +8,5 @@ examples where ESP32 runs SoftAP and serves HTTP endpoints. - Reviewed how to fe
 2/5/2026 ~6hrs - Get demo code working with Matt. Changed abstraction for actuators. Fixed bugs with manual override. Implement mister functionality. Straighten out init code.
 
 2/12/2026 ~5hrs - Configure new display! Researched how to put display in SPI mode and refactored code to use new library.
+
+3/25/2026 ~8hrs - Implement delete. Implement blackout.

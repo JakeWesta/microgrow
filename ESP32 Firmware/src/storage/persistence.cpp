@@ -24,6 +24,7 @@ void PersistenceManager::saveConfig(const DeviceConfig &config)
     prefs.putULong(KEY_WATER_START, config.waterStartSec);
     prefs.putULong(KEY_WATER_DUR, config.waterDurationSec);
     prefs.putULong(KEY_WATER_INT, config.waterIntervalSec);
+    prefs.putBool(KEY_BLACKOUT, config.blackout);
     prefs.end();
     Serial.println("Configuration saved to NVS");
 }
@@ -49,7 +50,7 @@ DeviceConfig PersistenceManager::loadConfig()
     config.waterStartSec = prefs.getULong(KEY_WATER_START, 0);
     config.waterDurationSec = prefs.getULong(KEY_WATER_DUR, 0);
     config.waterIntervalSec = prefs.getULong(KEY_WATER_INT, 0);
-    config.valid = true;
+    config.blackout = prefs.getBool(KEY_BLACKOUT, false);
 
     prefs.end();
     Serial.println("Configuration loaded from NVS");
@@ -59,7 +60,7 @@ DeviceConfig PersistenceManager::loadConfig()
     return config;
 }
 
-void PersistenceManager::clearConfig()
+void PersistenceManager::clear()
 {
     prefs.begin(NAMESPACE, false);
     prefs.clear();
@@ -200,4 +201,10 @@ void PersistenceManager::clearReadings()
     }
     prefs.end();
     Serial.println("Reading history cleared");
+}
+
+void PersistenceManager::setBlackout(bool blackout)
+{
+    prefs.begin(NAMESPACE, false);
+    prefs.putBool(KEY_BLACKOUT, blackout);
 }

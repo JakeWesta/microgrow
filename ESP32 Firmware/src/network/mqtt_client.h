@@ -57,6 +57,7 @@ private:
     String deviceId;
     String greenType;
     String growth;
+    bool blackout;
 
     InitState initState;
     uint32_t lastReconnectAttempt;
@@ -73,6 +74,8 @@ private:
     void handleOverride(JsonDocument &doc);
     void handleRefresh(JsonDocument &doc);
     void handleGrowth(JsonDocument &doc);
+    void handleDelete(void);
+    void handleBlackout(JsonDocument &doc);
     void messageCallback(char *topic, byte *payload, unsigned int length);
 
     // Subscription management
