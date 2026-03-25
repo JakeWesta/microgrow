@@ -18,6 +18,8 @@ class HabitatConfig {
   final int waterDurationSec;
   final int waterIntervalSec;
 
+  final int blackoutDuration;
+
   const HabitatConfig({
     required this.greenType,
     required this.tempTarget,
@@ -28,6 +30,7 @@ class HabitatConfig {
     required this.waterStartSec,
     required this.waterDurationSec,
     required this.waterIntervalSec,
+    required this.blackoutDuration,
   });
 
   Map<String, dynamic> toJson() => {
@@ -45,7 +48,8 @@ class HabitatConfig {
       "startTimeSec": waterStartSec,
       "durationSec": waterDurationSec,
       "intervalSec": waterIntervalSec,
-    }
+    },
+    "blackout": blackoutDuration,
   };
 }
 
@@ -82,17 +86,19 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
         waterStartSec: secSinceMidnight,
         waterDurationSec: 2, 
         waterIntervalSec: 300, 
+        blackoutDuration: 0,
       ),
       'Broccoli': HabitatConfig(
         greenType: 'Broccoli',
-        tempTarget: 70,
-        humidityTarget: 8,
+        tempTarget: 80,
+        humidityTarget: 28,
         lightStartSec: secSinceMidnight,
         lightDurationSec: 10, 
         lightIntervalSec: 15,
         waterStartSec: secSinceMidnight,
         waterDurationSec: 5, 
         waterIntervalSec: 15, 
+        blackoutDuration: 10,
       ),
     };
 
@@ -199,6 +205,7 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
                           waterStartSec: config.waterStartSec,
                           waterDurationSec: config.waterDurationSec,
                           waterIntervalSec: config.waterIntervalSec,
+                          blackoutDuration: config.blackoutDuration,
                         );
 
                         context.read<MyAppState>().addHabitat(newHabitat);

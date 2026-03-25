@@ -47,6 +47,8 @@ class HomeScreen extends StatelessWidget {
     final habitats = appState.getHabitats;
     final showDot = appState.showHarvestNotification;
     final showReservoirDot = appState.showReservoirNotification;
+    final showBlackoutDot = appState.showBlackoutNotification;
+
 
 
     return Scaffold(
@@ -77,6 +79,10 @@ class HomeScreen extends StatelessWidget {
                   final lowWaterHabitats = appState.habitats
                       .where((h) => appState.reservoirNotified[h.id] == true)
                       .toList();
+                  
+                  final blackoutHabitats = appState.habitats
+                      .where((h) => appState.blackoutNotified[h.id] == true && 
+                                    appState.blackoutAcknowledged[h.id] != true);
 
                   showDialog(
                     context: context,
@@ -105,6 +111,16 @@ class HomeScreen extends StatelessWidget {
                                     Navigator.pop(context);
                                   },
                                 )),
+                            ...blackoutHabitats.map((h) => ListTile(
+                                  leading: const Icon(Icons.wb_sunny, color: Colors.orange),
+                                  title: Text("${h.name} blackout period is complete!"),
+                                  subtitle: const Text("Ready to move to light exposure"),
+                                  trailing: const Icon(Icons.check_circle_outline),
+                                  onTap: () {
+                                    appState.acknowledgeBlackoutNotification(h.id);
+                                    Navigator.pop(context);
+                                  },
+                                )),
                           ],
                         ),
                       ),
@@ -113,6 +129,7 @@ class HomeScreen extends StatelessWidget {
                           onPressed: () {
                             appState.acknowledgeReservoirNotification();
                             appState.acknowledgeHarvestNotification();
+                            appState.acknowledgeBlackoutNotification();
                             Navigator.pop(context);
                           },
                           child: const Text("OK"),
@@ -122,7 +139,7 @@ class HomeScreen extends StatelessWidget {
                   );
                 },
               ),
-              if (showDot || showReservoirDot)
+              if (showDot || showReservoirDot || showBlackoutDot)
                 Positioned(
                   right: 8,
                   top: 8,

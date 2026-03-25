@@ -56,6 +56,9 @@ class Habitat extends HiveObject {
   @HiveField(15)
   List<DecorationObj> decorations;
 
+  @HiveField(16)
+  int blackoutDuration;
+
   Habitat({
     required this.id,
     required this.name,
@@ -72,6 +75,7 @@ class Habitat extends HiveObject {
     bool? harvested,
     List<SensorHistory>? history,
     List<DecorationObj>? decorations,
+    int? blackoutDuration,
   })  : lightDurationSec = lightDurationSec ?? 0,
         lightIntervalSec = lightIntervalSec ?? 0,
         waterDurationSec = waterDurationSec ?? 0,
@@ -80,7 +84,8 @@ class Habitat extends HiveObject {
         decorations = decorations ?? [],
         harvested = harvested ?? false,
         reservoirVolume = 50,
-        history = history ?? [];
+        history = history ?? [],
+        blackoutDuration = blackoutDuration ?? 0;
 
   double get growthProgress {
     final spec = growthSpecs[greenType]!;

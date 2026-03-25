@@ -66,7 +66,8 @@ class MqttService {
         "startTimeSec": config.waterStartSec,
         "durationSec": config.waterDurationSec,
         "intervalSec": config.waterIntervalSec,
-      }
+      },
+      "blackout" : config.blackoutDuration
     });
 
     final msg1 = jsonEncode({
@@ -98,6 +99,17 @@ class MqttService {
 
     final msg = jsonEncode({
       'delete': 0
+    });
+
+    client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));
+  }
+
+  static Future<void> blackoutEnd({required String habitatId}) async {
+    final client = await connect();
+    final topic = 'microgrow/$habitatId/blackout';
+
+    final msg = jsonEncode({
+      'blackout': 0
     });
 
     client.publishMessage(topic, MqttQos.atLeastOnce, Uint8Buffer()..addAll(utf8.encode(msg)));

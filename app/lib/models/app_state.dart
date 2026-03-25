@@ -9,12 +9,18 @@ class MyAppState extends ChangeNotifier {
   List<Habitat> habitats = [];
   bool harvestNotified = false;
   Map<String, bool> reservoirNotified = {};
+  Map<String, bool> blackoutNotified = {};
+  Map<String, bool> blackoutAcknowledged = {};
+
+
 
   MyAppState() {
     habitats = Database.habitatsBox.values.toList();
 
     for (var h in habitats) {
       reservoirNotified[h.id] = false;
+      blackoutNotified[h.id] = false;
+      blackoutAcknowledged[h.id] = false;
     }
 
     Timer.periodic(const Duration(seconds: 1), (_) async {
@@ -31,8 +37,39 @@ class MyAppState extends ChangeNotifier {
       }
 
       checkReservoirWarnings();
+      checkBlackoutComplete();
       notifyListeners();
     });
+  }
+
+  void checkBlackoutComplete() async {
+    for (var habitat in habitats) {
+      if (habitat.blackoutDuration <= 0) continue;
+      if (blackoutNotified[habitat.id] == true) continue;
+
+      final elapsed = DateTime.now().difference(habitat.createdAt).inSeconds;
+      if (elapsed >= habitat.blackoutDuration) {
+        blackoutNotified[habitat.id] = true;
+        await MqttService.blackoutEnd(
+          habitatId: habitat.id,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  bool get showBlackoutNotification =>
+    habitats.any((h) => blackoutNotified[h.id] == true && blackoutAcknowledged[h.id] != true);
+
+  void acknowledgeBlackoutNotification([String? habitatId]) {
+    if (habitatId != null) {
+      blackoutAcknowledged[habitatId] = true;
+    } else {
+      for (var key in blackoutAcknowledged.keys) {
+        blackoutAcknowledged[key] = true;
+      }
+    }
+    notifyListeners();
   }
 
   final double reservoirVolume = 50;
@@ -96,6 +133,8 @@ class MyAppState extends ChangeNotifier {
     await Database.saveHabitat(habitat);
     habitats = Database.habitatsBox.values.toList();
     reservoirLevels[habitat.id] = reservoirVolume;
+    blackoutNotified[habitat.id] = false;
+    blackoutAcknowledged[habitat.id] = false;
     notifyListeners();
   }
 
@@ -145,6 +184,8 @@ class MyAppState extends ChangeNotifier {
     await Database.habitatsBox.delete(habitat.id);
     habitats = Database.habitatsBox.values.toList();
     reservoirLevels.remove(habitat.id);
+    blackoutNotified.remove(habitat.id);
+    blackoutAcknowledged.remove(habitat.id);
     notifyListeners();
   }
 
