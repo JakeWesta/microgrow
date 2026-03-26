@@ -3,7 +3,8 @@ import 'habitat_obj.dart';
 import 'database.dart';
 import 'growth_config.dart';
 import 'dart:async';
-import '../mqtt/mqtt_connect.dart'; 
+import '../mqtt/mqtt_connect.dart';
+import '../main.dart';
 
 class MyAppState extends ChangeNotifier {
   List<Habitat> habitats = [];
@@ -15,6 +16,7 @@ class MyAppState extends ChangeNotifier {
 
     for (var h in habitats) {
       reservoirNotified[h.id] = false;
+      reservoirLevels[h.id] = reservoirVolume;
     }
 
     Timer.periodic(const Duration(seconds: 1), (_) async {
@@ -69,6 +71,7 @@ class MyAppState extends ChangeNotifier {
 
   void notifyReservoirLow(Habitat habitat) {
     reservoirNotified[habitat.id] = true;
+    sendNotification('Water Level Low', '${habitat.name}: Water reservoir is running low! Please refill soon.');
     notifyListeners();
   }
 

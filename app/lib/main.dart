@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 
 import 'models/app_state.dart';
@@ -26,6 +27,14 @@ Future<void> main() async {
   runApp(const MicroGrowApp());
 }
 
+final _notifications = FlutterLocalNotificationsPlugin();
+
+const _androidChannel = AndroidNotificationChannel(
+  'microgrow_alerts',
+  'MicroGrow Alerts',
+  importance: Importance.high,
+);
+
 Future<void> initPush() async {
   final messaging = FirebaseMessaging.instance;
 
@@ -35,14 +44,41 @@ Future<void> initPush() async {
     sound: true,
   );
 
-  // Get FSM token and print it
+  // Get FCM token and print it
   try {
     final token = await messaging.getToken();
     debugPrint('FCM Token: $token');
-  } 
+  }
   catch (error) {
     debugPrint('Failed to get FCM token: $error');
   }
+
+  // Set up local notifications
+  await _notifications
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(_androidChannel);
+
+  await _notifications.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    ),
+  );
+}
+
+Future<void> sendNotification(String title, String body) async {
+  await _notifications.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title,
+    body,
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        _androidChannel.id,
+        _androidChannel.name,
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+    ),
+  );
 }
 
 class MicroGrowApp extends StatelessWidget {
