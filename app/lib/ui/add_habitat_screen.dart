@@ -84,8 +84,8 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
         lightDurationSec: 1, 
         lightIntervalSec: 300, 
         waterStartSec: secSinceMidnight,
-        waterDurationSec: 2, 
-        waterIntervalSec: 300, 
+        waterDurationSec: 5, 
+        waterIntervalSec: 15, 
         blackoutDuration: 0,
       ),
       'Broccoli': HabitatConfig(

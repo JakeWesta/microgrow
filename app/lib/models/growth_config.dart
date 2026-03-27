@@ -40,7 +40,7 @@ class GrowthSpec {
 
 const Map<String, GrowthSpec> growthSpecs = {
   'Basil': GrowthSpec(
-    totalDuration: Duration(days: 7),
+    totalDuration: Duration(minutes: 1),
     saplingStart: 0.25,
     matureStart: 0.6,
     readyStart: 1.0,

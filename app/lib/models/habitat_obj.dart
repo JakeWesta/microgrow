@@ -83,7 +83,7 @@ class Habitat extends HiveObject {
         createdAt = createdAt ?? DateTime.now(),
         decorations = decorations ?? [],
         harvested = harvested ?? false,
-        reservoirVolume = 50,
+        reservoirVolume = 60,
         history = history ?? [],
         blackoutDuration = blackoutDuration ?? 0;
 

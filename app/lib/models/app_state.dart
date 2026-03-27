@@ -11,11 +11,16 @@ class MyAppState extends ChangeNotifier {
   Map<String, bool> reservoirNotified = {};
   Map<String, bool> blackoutNotified = {};
   Map<String, bool> blackoutAcknowledged = {};
+  final bool useDemoConfig = true; 
+  final int dailyCoinReward = 100;
+  final int reservoirCoinReward = 200;
+  final int harvestCoinReward = 500;
 
 
 
   MyAppState() {
     habitats = Database.habitatsBox.values.toList();
+
 
     for (var h in habitats) {
       reservoirNotified[h.id] = false;
@@ -38,8 +43,29 @@ class MyAppState extends ChangeNotifier {
 
       checkReservoirWarnings();
       checkBlackoutComplete();
+      checkDailyCoinReward();
       notifyListeners();
     });
+  }
+
+  void checkDailyCoinReward() {
+    final activeHabitats = habitats.where((h) => !h.harvested).toList();
+    if (activeHabitats.isEmpty) return;
+
+    final user = Database.user;
+    final now = DateTime.now();
+    final last = user.lastDailyClaim;
+
+    final interval = useDemoConfig
+        ? const Duration(seconds: 10)
+        : const Duration(days: 1);
+
+    if (last == null || now.difference(last) >= interval) {
+      user.coins += dailyCoinReward;
+      user.lastDailyClaim = now;
+      user.save();
+      notifyListeners();
+    }
   }
 
   void checkBlackoutComplete() async {
@@ -168,14 +194,24 @@ class MyAppState extends ChangeNotifier {
   bool get showReservoirNotification => reservoirNotified.values.any((notified) => notified);
 
   void acknowledgeReservoirNotification([String? habitatId]) {
+    final user = Database.user;
+
     if (habitatId != null) {
+      if (reservoirNotified[habitatId] == true) {
+        user.coins += reservoirCoinReward;
+        user.save();
+      }
       reservoirNotified[habitatId] = false;
       reservoirLevels[habitatId] = reservoirVolume;
     } else {
       for (var key in reservoirNotified.keys) {
+        if (reservoirNotified[key] == true) {
+          user.coins += reservoirCoinReward;
+        }
         reservoirNotified[key] = false;
         reservoirLevels[key] = reservoirVolume;
       }
+      user.save();
     }
     notifyListeners();
   }
@@ -196,7 +232,7 @@ class MyAppState extends ChangeNotifier {
     await habitat.save();
 
     final user = Database.user;
-    user.coins += 500;
+    user.coins += harvestCoinReward;
     await user.save();
 
     habitats = Database.habitatsBox.values.toList();

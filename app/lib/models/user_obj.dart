@@ -7,5 +7,8 @@ class User extends HiveObject {
   @HiveField(0)
   int coins;
 
-  User({this.coins = 0});
+  @HiveField(1)
+  DateTime? lastDailyClaim;
+
+  User({this.coins = 0, this.lastDailyClaim});
 }

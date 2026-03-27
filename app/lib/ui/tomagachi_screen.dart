@@ -125,6 +125,7 @@ class _TomagachiScreenState extends State<TomagachiScreen>
       final decoration = DecorationObj(type: name, x: 150, y: 150);
       widget.habitat.decorations.add(decoration);
       widget.habitat.save();
+      setState(() {});
     }
   }
 
@@ -145,11 +146,11 @@ class _TomagachiScreenState extends State<TomagachiScreen>
         backgroundColor: Colors.green[700],
         title: Row(
           children: [
-            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)), // microgreen/leaf icon
+            Icon(Icons.eco, size: 32, color: const Color.fromARGB(255, 134, 245, 153)),
             const SizedBox(width: 10),
             Text(
               ("${widget.habitat.name}'s House"),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -165,10 +166,18 @@ class _TomagachiScreenState extends State<TomagachiScreen>
           children: [
             const DrawerHeader(child: Text('Shop')),
             ListTile(
-              leading: const Icon(Icons.local_florist),
-              title: const Text('Flower - 5 coins'),
+              leading: Image.asset('assets/sprites/MicroGrow_Sign.png', width: 32, height: 32),
+              title: const Text('MicroGrow Sign - 50 coins'),
               onTap: () {
-                buyDecoration('flower', 5);
+                buyDecoration('sign', 50);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Image.asset('assets/sprites/Microgreen_Rug.png', width: 32, height: 32),
+              title: const Text('Microgreen Rug - 100 coins'),
+              onTap: () {
+                buyDecoration('rug', 100);
                 Navigator.pop(context);
               },
             ),
@@ -186,16 +195,36 @@ class _TomagachiScreenState extends State<TomagachiScreen>
 
           return Stack(
             children: [
-            
-              Container(color: skyColor),
 
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 120,
-                child: Container(color: Colors.brown[400]),
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/sprites/Tomagachi_Background.png',
+                  fit: BoxFit.cover,
+                ),
               ),
+
+              ...List.generate(widget.habitat.decorations.length, (index) {
+                final deco = widget.habitat.decorations[index];
+                return Positioned(
+                  left: deco.x,
+                  top: deco.y,
+                  child: GestureDetector(
+                    onPanUpdate: (details) {
+                      updateDecorationPosition(
+                          index,
+                          Offset(
+                            deco.x + details.delta.dx,
+                            deco.y + details.delta.dy,
+                          ));
+                    },
+                    child: deco.type == 'sign'
+                        ? Image.asset('assets/sprites/MicroGrow_Sign.png', width: 300, height: 250)
+                        : deco.type == 'rug'
+                            ? Image.asset('assets/sprites/Microgreen_Rug.png', width: 400, height: 320)
+                            : const SizedBox.shrink(),
+                  ),
+                );
+              }),
 
               Positioned(
                 bottom: 120 + yOffset,
@@ -218,46 +247,16 @@ class _TomagachiScreenState extends State<TomagachiScreen>
                       spriteAsset(widget.habitat, currentStage, spriteFrame),
                       width: plantWidth,
                       height: plantHeight,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.eco,
+                        size: 60,
+                        color: Colors.green[400],
+                        shadows: const [
+                          Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-              ),
-
-              ...List.generate(widget.habitat.decorations.length, (index) {
-                final deco = widget.habitat.decorations[index];
-                return Positioned(
-                  left: deco.x,
-                  top: deco.y,
-                  child: GestureDetector(
-                    onPanUpdate: (details) {
-                      updateDecorationPosition(
-                          index,
-                          Offset(
-                            deco.x + details.delta.dx,
-                            deco.y + details.delta.dy,
-                          ));
-                    },
-                    child: deco.type == 'flower'
-                        ? const Icon(Icons.local_florist, size: 40, color: Colors.pink)
-                        : const SizedBox.shrink(),
-                  ),
-                );
-              }),
-
-              Positioned(
-                top: 40,
-                right: 20,
-                child: ElevatedButton(
-                  onPressed: triggerParty,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 159, 156, 159),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(
-                    isPartyOn ? 'Stop Party' : 'Party Time',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
                 ),
               ),
 
