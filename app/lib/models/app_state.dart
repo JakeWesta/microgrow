@@ -24,8 +24,8 @@ class MyAppState extends ChangeNotifier {
 
     for (var h in habitats) {
       reservoirNotified[h.id] = false;
-      blackoutNotified[h.id] = false;
-      blackoutAcknowledged[h.id] = false;
+      blackoutNotified[h.id] = h.blackoutAcknowledged; 
+      blackoutAcknowledged[h.id] = h.blackoutAcknowledged;
     }
 
     Timer.periodic(const Duration(seconds: 1), (_) async {
@@ -49,7 +49,7 @@ class MyAppState extends ChangeNotifier {
   }
 
   void checkDailyCoinReward() {
-    final activeHabitats = habitats.where((h) => !h.harvested).toList();
+    final activeHabitats = habitats.where((h) => !h.harvested && !isHabitatReady(h)).toList();
     if (activeHabitats.isEmpty) return;
 
     final user = Database.user;
@@ -87,18 +87,23 @@ class MyAppState extends ChangeNotifier {
   bool get showBlackoutNotification =>
     habitats.any((h) => blackoutNotified[h.id] == true && blackoutAcknowledged[h.id] != true);
 
-  void acknowledgeBlackoutNotification([String? habitatId]) {
+  void acknowledgeBlackoutNotification([String? habitatId]) async {
     if (habitatId != null) {
       blackoutAcknowledged[habitatId] = true;
+      final habitat = habitats.firstWhere((h) => h.id == habitatId);
+      habitat.blackoutAcknowledged = true;
+      await habitat.save();
     } else {
-      for (var key in blackoutAcknowledged.keys) {
-        blackoutAcknowledged[key] = true;
+      for (var h in habitats) {
+        blackoutAcknowledged[h.id] = true;
+        h.blackoutAcknowledged = true;
+        await h.save();
       }
     }
     notifyListeners();
   }
 
-  final double reservoirVolume = 50;
+  final double reservoirVolume = 40;
   final double flowRate = 100 / 60;
   final double lowThreshold = 10;
 

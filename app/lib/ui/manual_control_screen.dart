@@ -13,12 +13,28 @@ class ManualControlScreen extends StatefulWidget {
 }
 
 class _ManualControlScreenState extends State<ManualControlScreen> {
-  bool lightOn = false;
-  bool fanOn = false;
+  bool get lightOn => widget.habitat.lightOverride;
+  bool get fanOn => widget.habitat.fanOverride;
+  bool get misterOn => widget.habitat.misterOverride;
   bool waterFlashing = false;
-  bool misterOn = false;
 
   Color selectedColor = Colors.blue;
+
+  Future<void> setOverride(String actuator, bool val) async {
+    switch (actuator) {
+      case 'light':
+        widget.habitat.lightOverride = val;
+        break;
+      case 'fan':
+        widget.habitat.fanOverride = val;
+        break;
+      case 'mister':
+        widget.habitat.misterOverride = val;
+        break;
+    }
+    await widget.habitat.save();
+    setState(() {});
+  }
 
   Future<void> sendOverride(String actuator, int val, {int? r, int? g, int? b}) async {
     try {
@@ -214,24 +230,23 @@ Widget lightColorCard() {
           waterCard(),
           lightColorCard(),
           toggleCard('Light', lightOn, (val) {
-            setState(() => lightOn = val);
-            sendOverride(
-              'light',
-              val ? 1 : 0,
-              r: (selectedColor.r * 255).round(),
-              g: (selectedColor.g * 255).round(),
-              b: (selectedColor.b * 255).round(),
-            );
-          }),
-          toggleCard('Fan', fanOn, (val) {
-            setState(() => fanOn = val);
-            sendOverride('fan', val ? 1 : 0);
-          }),
-
-          toggleCard('Mister', misterOn, (val) {
-            setState(() => misterOn = val);
-            sendOverride('mister', val ? 1 : 0);
-          }),
+          setOverride('light', val);
+          sendOverride(
+            'light',
+            val ? 1 : 0,
+            r: (selectedColor.r * 255).round(),
+            g: (selectedColor.g * 255).round(),
+            b: (selectedColor.b * 255).round(),
+          );
+        }),
+        toggleCard('Fan', fanOn, (val) {
+          setOverride('fan', val);
+          sendOverride('fan', val ? 1 : 0);
+        }),
+        toggleCard('Mister', misterOn, (val) {
+          setOverride('mister', val);
+          sendOverride('mister', val ? 1 : 0);
+        }),
           
         ],
       ),

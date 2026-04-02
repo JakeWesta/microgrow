@@ -18,15 +18,18 @@ class UserAdapter extends TypeAdapter<User> {
     };
     return User(
       coins: fields[0] as int,
+      lastDailyClaim: fields[1] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, User obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.coins);
+      ..write(obj.coins)
+      ..writeByte(1)
+      ..write(obj.lastDailyClaim);
   }
 
   @override

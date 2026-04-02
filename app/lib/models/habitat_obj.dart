@@ -59,6 +59,18 @@ class Habitat extends HiveObject {
   @HiveField(16)
   int blackoutDuration;
 
+  @HiveField(17)
+  bool blackoutAcknowledged;
+
+  @HiveField(18)
+  bool lightOverride;
+
+  @HiveField(19)
+  bool fanOverride;
+
+  @HiveField(20)
+  bool misterOverride;
+
   Habitat({
     required this.id,
     required this.name,
@@ -76,6 +88,10 @@ class Habitat extends HiveObject {
     List<SensorHistory>? history,
     List<DecorationObj>? decorations,
     int? blackoutDuration,
+    bool? blackoutAcknowledged,
+    bool? lightOverride,
+    bool? fanOverride,
+    bool? misterOverride,
   })  : lightDurationSec = lightDurationSec ?? 0,
         lightIntervalSec = lightIntervalSec ?? 0,
         waterDurationSec = waterDurationSec ?? 0,
@@ -83,8 +99,12 @@ class Habitat extends HiveObject {
         createdAt = createdAt ?? DateTime.now(),
         decorations = decorations ?? [],
         harvested = harvested ?? false,
-        reservoirVolume = 60,
+        reservoirVolume = 50,
         history = history ?? [],
+        blackoutAcknowledged = blackoutAcknowledged ?? false,
+        lightOverride = lightOverride ?? false,
+        fanOverride = fanOverride ?? false,
+        misterOverride = misterOverride ?? false,
         blackoutDuration = blackoutDuration ?? 0;
 
   double get growthProgress {

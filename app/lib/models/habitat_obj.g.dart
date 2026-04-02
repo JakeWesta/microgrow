@@ -33,13 +33,17 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       history: (fields[13] as List?)?.cast<SensorHistory>(),
       decorations: (fields[15] as List?)?.cast<DecorationObj>(),
       blackoutDuration: fields[16] as int?,
+      blackoutAcknowledged: fields[17] as bool?,
+      lightOverride: fields[18] as bool?,
+      fanOverride: fields[19] as bool?,
+      misterOverride: fields[20] as bool?,
     )..reservoirVolume = fields[14] as int;
   }
 
   @override
   void write(BinaryWriter writer, Habitat obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -73,7 +77,15 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       ..writeByte(15)
       ..write(obj.decorations)
       ..writeByte(16)
-      ..write(obj.blackoutDuration);
+      ..write(obj.blackoutDuration)
+      ..writeByte(17)
+      ..write(obj.blackoutAcknowledged)
+      ..writeByte(18)
+      ..write(obj.lightOverride)
+      ..writeByte(19)
+      ..write(obj.fanOverride)
+      ..writeByte(20)
+      ..write(obj.misterOverride);
   }
 
   @override
