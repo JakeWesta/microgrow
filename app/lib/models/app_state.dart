@@ -161,6 +161,16 @@ class MyAppState extends ChangeNotifier {
   List<Habitat> get getHabitats => habitats;
 
   Future<void> addHabitat(Habitat habitat) async {
+    final usedSlots = habitats.map((h) => h.slotIndex).toSet();
+    int assignedSlot = 0;
+    for (int i = 0; i < 6; i++) {
+      if (!usedSlots.contains(i)) {
+        assignedSlot = i;
+        break;
+      }
+    }
+    habitat.slotIndex = assignedSlot;
+
     await Database.saveHabitat(habitat);
     habitats = Database.habitatsBox.values.toList();
     reservoirLevels[habitat.id] = reservoirVolume;

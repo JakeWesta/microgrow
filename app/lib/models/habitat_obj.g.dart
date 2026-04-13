@@ -37,13 +37,14 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       lightOverride: fields[18] as bool?,
       fanOverride: fields[19] as bool?,
       misterOverride: fields[20] as bool?,
+      slotIndex: fields[21] as int?,
     )..reservoirVolume = fields[14] as int;
   }
 
   @override
   void write(BinaryWriter writer, Habitat obj) {
     writer
-      ..writeByte(21)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -85,7 +86,9 @@ class HabitatAdapter extends TypeAdapter<Habitat> {
       ..writeByte(19)
       ..write(obj.fanOverride)
       ..writeByte(20)
-      ..write(obj.misterOverride);
+      ..write(obj.misterOverride)
+      ..writeByte(21)
+      ..write(obj.slotIndex);
   }
 
   @override

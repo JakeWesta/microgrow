@@ -71,6 +71,9 @@ class Habitat extends HiveObject {
   @HiveField(20)
   bool misterOverride;
 
+  @HiveField(21)
+  int slotIndex;
+
   Habitat({
     required this.id,
     required this.name,
@@ -92,6 +95,7 @@ class Habitat extends HiveObject {
     bool? lightOverride,
     bool? fanOverride,
     bool? misterOverride,
+    int? slotIndex,
   })  : lightDurationSec = lightDurationSec ?? 0,
         lightIntervalSec = lightIntervalSec ?? 0,
         waterDurationSec = waterDurationSec ?? 0,
@@ -105,6 +109,7 @@ class Habitat extends HiveObject {
         lightOverride = lightOverride ?? false,
         fanOverride = fanOverride ?? false,
         misterOverride = misterOverride ?? false,
+        slotIndex = slotIndex ?? -1,
         blackoutDuration = blackoutDuration ?? 0;
 
   double get growthProgress {

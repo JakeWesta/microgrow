@@ -51,6 +51,36 @@ const Map<String, GrowthSpec> growthSpecs = {
     matureStart: 0.55,
     readyStart: 1.0,
   ),
+  'Kale': GrowthSpec(
+    totalDuration: Duration(minutes: 1),
+    saplingStart: 0.2,
+    matureStart: 0.55,
+    readyStart: 1.0,
+  ),
+  'Sunflower': GrowthSpec(
+    totalDuration: Duration(minutes: 1),
+    saplingStart: 0.2,
+    matureStart: 0.55,
+    readyStart: 1.0,
+  ),
+  'Radish': GrowthSpec(
+    totalDuration: Duration(minutes: 1),
+    saplingStart: 0.2,
+    matureStart: 0.55,
+    readyStart: 1.0,
+  ),
+  'Pea': GrowthSpec(
+    totalDuration: Duration(minutes: 1),
+    saplingStart: 0.2,
+    matureStart: 0.55,
+    readyStart: 1.0,
+  ),
+  'Arugula': GrowthSpec(
+    totalDuration: Duration(minutes: 1),
+    saplingStart: 0.2,
+    matureStart: 0.55,
+    readyStart: 1.0,
+  ),
 };
 
 const Duration realGrowthDuration = Duration(days: 7);
