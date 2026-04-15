@@ -136,7 +136,7 @@ void MQTTClient::subscribeToHabitatTopics()
 }
 
 bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow,
-                                   bool lightOn)
+                                   CRGB color)
 {
   if (!isConnected())
   {
@@ -151,8 +151,13 @@ bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow,
       client.publish((base + "humidity").c_str(), String(humidity, 1).c_str());
   success &= client.publish((base + "water").c_str(),
                             String(waterLow ? 1 : 0).c_str());
-  success &= client.publish((base + "light").c_str(),
-                            String(lightOn ? 100 : 0).c_str());
+  JsonDocument colorDoc;
+  colorDoc["r"] = color.r;
+  colorDoc["g"] = color.g;
+  colorDoc["b"] = color.b;
+  String colorJson;
+  serializeJson(colorDoc, colorJson);
+  success &= client.publish((base + "light").c_str(), colorJson.c_str());
 
   return success;
 }
@@ -175,6 +180,12 @@ void MQTTClient::staticCallback(char *topic, byte *payload,
   {
     instance->messageCallback(topic, payload, length);
   }
+}
+
+bool MQTTClient::publishWater(void)
+{
+  String topic = "microgrow/" + deviceId + "/water";
+  return client.publish(topic.c_str(), "Water");
 }
 
 void MQTTClient::messageCallback(char *topic, byte *payload,

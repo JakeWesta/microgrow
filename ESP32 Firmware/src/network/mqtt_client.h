@@ -34,8 +34,9 @@ public:
     void loop(); // Must be called regularly
 
     // Publishing
-    bool publishSensorData(float temp, float humidity, bool waterLow, bool lightOn);
+    bool publishSensorData(float temp, float humidity, bool waterLow, CRGB color);
     bool publishStatus(const String &message);
+    bool publishWater(void);
 
     // Configuration state
     bool isInitialized() const { return initState == InitState::COMPLETE; }

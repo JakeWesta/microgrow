@@ -108,6 +108,9 @@ void setup()
 
         display->setGreenType(config.greenType);
         display->setGrowth(config.growth);
+
+        scheduler->getWaterSchedule().enable();
+        scheduler->getLightSchedule().enable();
     }
     else
     {
@@ -119,14 +122,12 @@ void setup()
         { actuators->getPump().on(); },
         [=]()
         { actuators->getPump().off(); });
-    scheduler->getWaterSchedule().enable();
 
     scheduler->getLightSchedule().setCallbacks(
         [=]()
         { actuators->getLEDs().setColor(255, 255, 255); },
         [=]()
         { actuators->getLEDs().off(); });
-    scheduler->getLightSchedule().enable();
 
     // Initialize WiFi
     Serial.println("9. Starting WiFi...");
@@ -184,7 +185,7 @@ void sensorTask(void *param)
     {
         SensorReadings readings = sensors->read();
 
-        if (wifiMgr->isConnected() && mqttClient->isInitialized() /*&& readings.valid*/)
+        if (wifiMgr->isConnected() && mqttClient->isInitialized() && readings.valid)
         {
             display->showSensorData(
                 readings.temperature,
@@ -275,7 +276,7 @@ void networkTask(void *param)
                 mqttClient->loop();
 
                 if (mqttClient->isInitialized())
-                {   
+                {
                     TickType_t now = xTaskGetTickCount();
                     if (now - lastPublish > pdMS_TO_TICKS(MQTT_PUBLISH_INTERVAL_MS))
                     {
@@ -286,7 +287,7 @@ void networkTask(void *param)
                                 readings.temperature,
                                 readings.humidity,
                                 readings.waterLevelLow,
-                                actuators->getLEDs().isOn());
+                                actuators->getLEDs().getcurrentColor());
                             lastPublish = now;
                         }
                     }

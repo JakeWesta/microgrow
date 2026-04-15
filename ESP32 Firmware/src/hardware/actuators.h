@@ -86,7 +86,7 @@ public:
     void setColor(CRGB color);
     void setBrightness(uint8_t brightness);
 
-    bool isOn() const { return ledOn; }
+    CRGB getcurrentColor() const { return currentColor; }
 
 private:
     CRGB *leds;

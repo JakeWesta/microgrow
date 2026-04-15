@@ -156,7 +156,7 @@ void LEDStrip::flash(CRGB color)
 {
     // Save current color and state
     CRGB previousColor = currentColor;
-    bool wasOn = ledOn;         // TODO: Might need to change this with current logic, double check
+    bool wasOn = ledOn;
 
     // Set new color to flash
     currentColor = color;
