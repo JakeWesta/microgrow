@@ -4,7 +4,7 @@
 #include <qrcode.h>
 #include <SPI.h>
 
-// ── Color Palette ────────────────────────────────────────────────────────────
+//  Color Palette
 // Black background, vivid neon accents
 #define COLOR_BG ILI9341_BLACK  // 0xF2FFF3
 #define COLOR_SURFACE 0x1863    // Dark charcoal (status bar)
@@ -64,7 +64,7 @@ void DisplayManager::setBrightness(uint8_t level)
     // ILI9341 doesn't have software brightness control
 }
 
-// ── Text helpers ─────────────────────────────────────────────────────────────
+//  Text helpers
 
 /**
  * Returns the pixel width of `text` at the given text size.
@@ -102,7 +102,7 @@ void DisplayManager::drawRightText(const String &text, int y, uint8_t size, uint
     tft.print(text);
 }
 
-// ── Status bar ───────────────────────────────────────────────────────────────
+//  Status bar
 
 void DisplayManager::drawStatusBar()
 {
@@ -126,7 +126,7 @@ void DisplayManager::drawStatusBar()
     tft.print(mqttConnected ? "MQTT+" : "MQTT-");
 }
 
-// ── Section header (reusable) ─────────────────────────────────────────────────
+//  Section header (reusable)
 
 void DisplayManager::drawPageHeader(const String &title, uint16_t color)
 {
@@ -138,7 +138,7 @@ void DisplayManager::drawPageHeader(const String &title, uint16_t color)
     tft.drawFastHLine(lineX, 36 + 3 * 8 + 2, lineW, color);
 }
 
-// ── Boot screen ───────────────────────────────────────────────────────────────
+//  Boot screen
 
 void DisplayManager::showBoot()
 {
@@ -156,7 +156,7 @@ void DisplayManager::showBoot()
     drawCenteredText("Initializing...", 175, 2, COLOR_ACCENT_DIM);
 }
 
-// ── WiFi setup / connecting screens ──────────────────────────────────────────
+//  WiFi setup / connecting screens
 
 /**
  * Internal helper: renders the WiFi setup layout.
@@ -169,17 +169,17 @@ void DisplayManager::_renderWiFiSetup(uint8_t phase)
     clear();
     drawStatusBar();
 
-    // ── Header ──
+    //  Header
     drawCenteredText("Device Setup", 32, 3, COLOR_ACCENT);
     tft.drawFastHLine(10, 60, TFT_WIDTH - 20, COLOR_ACCENT_DIM);
 
-    // ── Hotspot section ──
+    //  Hotspot section
     drawCenteredText("Connect to:", 68, 2, COLOR_GRAY);
     drawCenteredText("MicroGrow-Setup", 90, 2, COLOR_CYAN);
 
     tft.drawFastHLine(10, 118, TFT_WIDTH - 20, COLOR_DARK_GRAY);
 
-    // ── Device ID section ──
+    //  Device ID section
     drawCenteredText("Device ID", 126, 2, COLOR_GRAY);
 
     // Highlight box for device ID
@@ -194,7 +194,7 @@ void DisplayManager::_renderWiFiSetup(uint8_t phase)
 
     tft.drawFastHLine(10, 182, TFT_WIDTH - 20, COLOR_DARK_GRAY);
 
-    // ── Status line ──
+    //  Status line
     if (phase == 0)
     {
         drawCenteredText("Open app to configure", 190, 2, COLOR_GRAY);
@@ -223,7 +223,7 @@ void DisplayManager::showWiFiConnected()
     drawStatusBar(); // refresh status bar to show WiFi green
 }
 
-// ── Running / sensor screen ───────────────────────────────────────────────────
+//  Running / sensor screen
 
 void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
 {
@@ -254,7 +254,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     tft.fillRect(0, STATUS_H + 1, TFT_WIDTH, DIVIDER_Y - STATUS_H + 2, COLOR_BG);
     yield();
 
-    // ── Temperature — top left ──────────────────────────────────
+    // Temperature - top left
     // size 4 = 24px wide × 32px tall per char
     String tempStr = String(temp, 1) + " F";
     tft.setTextSize(4);
@@ -262,17 +262,17 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     tft.setCursor(4, SENSOR_Y);
     tft.print(tempStr);
 
-    // ── Humidity — top right ────────────────────────────────────
+    // Humidity - top right
     String humStr = String(humidity, 1) + " %";
     uint16_t humW = humStr.length() * 24; // 24px per char at size 4
     tft.setTextColor(COLOR_GREEN_OK, COLOR_BG);
     tft.setCursor(TFT_WIDTH - humW - 4, SENSOR_Y);
     tft.print(humStr);
 
-    // ── Divider ────────────────────────────────────────────────
+    // Divider
     tft.fillRect(0, DIVIDER_Y, TFT_WIDTH, 2, COLOR_ACCENT_DIM);
 
-    // ── Plant image — scaled to fill everything below divider ──
+    // Plant image - scaled to fill everything below divider
     const int imgY = DIVIDER_Y + 2;
 
     uint32_t now = millis();
@@ -289,7 +289,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     }
 }
 
-// ── Error screen ──────────────────────────────────────────────────────────────
+// Error screen
 
 void DisplayManager::showError(const String &message)
 {
@@ -304,7 +304,7 @@ void DisplayManager::showError(const String &message)
     drawCenteredText(message, 120, 2, COLOR_WHITE);
 }
 
-// ── QR Code screen ────────────────────────────────────────────────────────────
+//  QR Code screen
 
 void DisplayManager::showQRCode(const String &data)
 {
@@ -335,7 +335,7 @@ void DisplayManager::showQRCode(const String &data)
     }
 }
 
-// ── Status helpers ────────────────────────────────────────────────────────────
+//  Status helpers
 
 void DisplayManager::setWiFiStatus(bool connected)
 {
@@ -364,7 +364,7 @@ void DisplayManager::setMQTTStatus(bool connected)
     }
 }
 
-// ── Image helper ──────────────────────────────────────────────────────────────
+//  Image helper
 
 void DisplayManager::drawImage(const String &filename, int x, int y)
 {

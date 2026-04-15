@@ -38,19 +38,12 @@ public:
     DeviceConfig loadConfig();
     void clear();
 
-    // Readings
+    // Reading ring buffer
     void saveReading(const StoredReading &reading);
     StoredReading getReading(uint8_t index);
     uint8_t getReadingCount();
     void getAllReadings(StoredReading *out);
     void clearReadings();
-
-    // Individual settings
-    void saveTargets(float temp, float humidity);
-    void saveLightSchedule(uint32_t start, uint32_t duration, uint32_t interval);
-    void saveWaterSchedule(uint32_t start, uint32_t duration, uint32_t interval);
-    void saveHabitatInfo(const String &type, const String &growth);
-    void setBlackout(bool blackout);
 
 private:
     Preferences prefs;

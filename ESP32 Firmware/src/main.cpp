@@ -34,89 +34,65 @@ void actuatorTask(void *param);
 void scheduleTask(void *param);
 void networkTask(void *param);
 
-void setup()
-{
-    Serial.begin(SERIAL_BAUD);
-    delay(1000);
-    Serial.println("\n\n=== MicroGrow Starting ===");
+// Helpers
 
-    // Initialize objects in controlled order
-    Serial.println("1. Creating display...");
+// Apply a fully-loaded DeviceConfig to all subsystems and schedule callbacks.
+// Called both at boot (from NVS) and when a fresh /init arrives over MQTT.
+static void applyConfig(const DeviceConfig &config)
+{
+    automation->setTargets(config.targetTemp, config.targetHumidity);
+    automation->enable();
+
+    scheduler->getLightSchedule().setTiming(
+        Timing(config.lightStartSec, config.lightDurationSec, config.lightIntervalSec));
+    scheduler->getWaterSchedule().setTiming(
+        Timing(config.waterStartSec, config.waterDurationSec, config.waterIntervalSec));
+
+    display->setGreenType(config.greenType);
+    display->setGrowth(config.growth);
+
+    scheduler->getWaterSchedule().enable();
+    scheduler->getLightSchedule().enable();
+    if (config.blackout)
+        scheduler->getLightSchedule().pause();
+}
+
+static void initializeHardware()
+{
+    Serial.println("Creating display...");
     display = new DisplayManager();
     display->begin();
     display->showBoot();
-    yield();
 
-    Serial.println("2. Creating sensors...");
+    Serial.println("Creating sensors...");
     sensors = new SensorManager();
     sensors->begin();
-    yield();
 
-    Serial.println("3. Creating actuators...");
+    Serial.println("Creating actuators...");
     actuators = new ActuatorManager();
     actuators->begin();
-    yield();
 
-    Serial.println("4. Creating scheduler...");
+    Serial.println("Creating scheduler...");
     scheduler = new Scheduler();
-    yield();
 
-    Serial.println("5. Creating automation...");
+    Serial.println("Creating automation...");
     automation = new AutomationController(*sensors, *actuators);
-    yield();
 
-    Serial.println("6. Creating storage...");
+    Serial.println("Creating storage...");
     storage = new PersistenceManager();
-    yield();
 
-    Serial.println("7. Creating WiFi manager...");
+    Serial.println("Creating WiFi manager...");
     wifiMgr = new EspWiFiManager();
-    yield();
+}
 
-    // Setup WiFi reset button
-    pinMode(PIN_BUTTON, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(PIN_BUTTON), handleResetButton, FALLING);
+static void setupWiFiButton()
+{
+    pinMode(PIN_WIFI_BUTTON, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(PIN_WIFI_BUTTON), handleResetButton, FALLING);
+}
 
-    Serial.println("8. Creating MQTT client...");
-    mqttClient = &MQTTClient::getInstance(wifiMgr->getDeviceId());
-    yield();
-
-    // Wire MQTT dependencies
-    mqttClient->setActuators(actuators);
-    mqttClient->setScheduler(scheduler);
-    mqttClient->setAutomation(automation);
-    mqttClient->setDisplay(display);
-
-    if (storage->isConfigured())
-    {
-        Serial.println("Loading saved configuration...");
-
-        DeviceConfig config = storage->loadConfig();
-
-        automation->setTargets(config.targetTemp, config.targetHumidity);
-        automation->enable();
-
-        scheduler->getLightSchedule().setTiming(
-            Timing(config.lightStartSec,
-                   config.lightDurationSec,
-                   config.lightIntervalSec));
-
-        scheduler->getWaterSchedule().setTiming(
-            Timing(config.waterStartSec,
-                   config.waterDurationSec,
-                   config.waterIntervalSec));
-
-        display->setGreenType(config.greenType);
-        display->setGrowth(config.growth);
-
-        scheduler->getWaterSchedule().enable();
-        scheduler->getLightSchedule().enable();
-    }
-    else
-    {
-        Serial.println("No saved configuration - awaiting setup");
-    }
-
+static void setupScheduleCallbacks()
+{
     scheduler->getWaterSchedule().setCallbacks(
         [=]()
         { actuators->getPump().on(); },
@@ -128,9 +104,65 @@ void setup()
         { actuators->getLEDs().setColor(255, 255, 255); },
         [=]()
         { actuators->getLEDs().off(); });
+}
 
-    // Initialize WiFi
-    Serial.println("9. Starting WiFi...");
+static void loadAndApplyConfig()
+{
+    bool configured = storage->isConfigured();
+    DeviceConfig config;
+    if (configured)
+    {
+        Serial.println("Loading saved configuration...");
+        config = storage->loadConfig();
+        applyConfig(config);
+    }
+    else
+    {
+        config.growth = "seed";
+        Serial.println("No saved configuration - awaiting MQTT setup");
+    }
+}
+
+static void setupMQTT()
+{
+    Serial.println("Creating MQTT client...");
+    mqttClient = &MQTTClient::getInstance(wifiMgr->getDeviceId());
+
+    mqttClient->setActuators(actuators);
+    mqttClient->setScheduler(scheduler);
+    mqttClient->setAutomation(automation);
+    mqttClient->setDisplay(display);
+
+    MQTTCallbacks cbs;
+    cbs.onConfig = [](const DeviceConfig &cfg)
+    {
+        storage->saveConfig(cfg);
+        applyConfig(cfg);
+    };
+    cbs.onGrowth = [](const String &growth)
+    {
+        DeviceConfig cfg = storage->loadConfig();
+        cfg.growth = growth;
+        storage->saveConfig(cfg);
+    };
+    cbs.onBlackout = [](bool blackout)
+    {
+        DeviceConfig cfg = storage->loadConfig();
+        cfg.blackout = blackout;
+        storage->saveConfig(cfg);
+    };
+    cbs.onDelete = []()
+    { storage->clear(); };
+
+    mqttClient->setCallbacks(cbs);
+
+    DeviceConfig config = storage->isConfigured() ? storage->loadConfig() : DeviceConfig();
+    mqttClient->begin(storage->isConfigured(), config.greenType, config.growth);
+}
+
+static void initializeWiFi()
+{
+    Serial.println("Starting WiFi...");
     Serial.printf("Device ID: %s\n", wifiMgr->getDeviceId().c_str());
     if (!wifiMgr->begin())
     {
@@ -138,24 +170,36 @@ void setup()
         display->showWiFiSetup(wifiMgr->getDeviceId());
         wifiMgr->startConfigPortal();
     }
-    yield();
+}
 
-    // Initialize MQTT
-    Serial.println("10. Starting MQTT...");
-    mqttClient->begin();
-    yield();
-
-    // Flash LEDs teal on successful WiFi/MQTT setup
-    actuators->getLEDs().flash(CRGB::Teal);
-
-    // Start FreeRTOS tasks
-    Serial.println("11. Creating FreeRTOS tasks...");
+static void startTasks()
+{
+    Serial.println("Creating tasks...");
     xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(actuatorTask, "Actuator", 8192, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
+}
 
-    // Flash LEDs green when setup is complete
+void setup()
+{
+    Serial.begin(SERIAL_BAUD);
+    delay(1000);
+    Serial.println("\n\n=== MicroGrow Starting ===");
+
+    initializeHardware();
+    setupWiFiButton();
+    setupScheduleCallbacks();
+    loadAndApplyConfig();
+    setupMQTT();
+    initializeWiFi();
+
+    Serial.println("Starting MQTT...");
+    mqttClient->connect();
+
+    actuators->getLEDs().flash(CRGB::Teal);
+    startTasks();
+
     actuators->getLEDs().flash(CRGB::Green);
     Serial.println("\n=== MicroGrow Ready ===\n");
 }
@@ -174,7 +218,7 @@ void loop()
 }
 
 // ============================================================================
-// FreeRTOS Tasks
+// Tasks
 // ============================================================================
 
 void sensorTask(void *param)
@@ -212,7 +256,7 @@ void scheduleTask(void *param)
 {
     TickType_t lastWakeTime = xTaskGetTickCount();
     int retryCount = 0;
-    const int maxRetries = 60; // Wait up to 60 seconds for time sync
+    const int maxRetries = 60;
 
     while (!Scheduler::isTimeValid() && retryCount < maxRetries)
     {
@@ -222,13 +266,9 @@ void scheduleTask(void *param)
     }
 
     if (!Scheduler::isTimeValid())
-    {
         Serial.println("WARNING: Scheduler starting without valid time");
-    }
     else
-    {
         Serial.println("Scheduler started with valid time");
-    }
 
     while (true)
     {
@@ -251,15 +291,11 @@ void networkTask(void *param)
         {
             display->setWiFiStatus(false);
             Serial.println("WiFi disconnected, attempting reconnect...");
-
-            // Flash LEDs orange while trying to reconnect
             actuators->getLEDs().flash(CRGB::Orange4);
             wifiMgr->reconnect();
         }
         else
         {
-            // setWiFiStatus now automatically upgrades the WiFi-setup screen
-            // to "WiFi OK - Awaiting config..." when we're still in setup state.
             display->setWiFiStatus(true);
         }
 
@@ -277,6 +313,7 @@ void networkTask(void *param)
 
                 if (mqttClient->isInitialized())
                 {
+                    // Periodic sensor publish
                     TickType_t now = xTaskGetTickCount();
                     if (now - lastPublish > pdMS_TO_TICKS(MQTT_PUBLISH_INTERVAL_MS))
                     {
@@ -292,6 +329,7 @@ void networkTask(void *param)
                         }
                     }
 
+                    // Periodic NVS reading save
                     time_t now_t;
                     time(&now_t);
                     if (now_t - lastReading >= READING_SAVE_INTERVAL_S)
@@ -311,6 +349,6 @@ void networkTask(void *param)
             }
         }
 
-        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(100));
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(20));
     }
 }
