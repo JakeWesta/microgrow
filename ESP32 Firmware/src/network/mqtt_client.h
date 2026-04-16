@@ -4,6 +4,7 @@
 #include <PubSubClient.h>
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
+#include <FastLED.h>
 #include "../hardware/display.h"
 
 // Forward declarations
