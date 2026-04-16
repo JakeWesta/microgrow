@@ -254,7 +254,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     tft.fillRect(0, STATUS_H + 1, TFT_WIDTH, DIVIDER_Y - STATUS_H + 2, COLOR_BG);
     yield();
 
-    // Temperature - top left
+    //  Temperature — top left
     // size 4 = 24px wide × 32px tall per char
     String tempStr = String(temp, 1) + " F";
     tft.setTextSize(4);
@@ -262,17 +262,17 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     tft.setCursor(4, SENSOR_Y);
     tft.print(tempStr);
 
-    // Humidity - top right
+    //  Humidity — top right
     String humStr = String(humidity, 1) + " %";
     uint16_t humW = humStr.length() * 24; // 24px per char at size 4
     tft.setTextColor(COLOR_GREEN_OK, COLOR_BG);
     tft.setCursor(TFT_WIDTH - humW - 4, SENSOR_Y);
     tft.print(humStr);
 
-    // Divider
+    //  Divider
     tft.fillRect(0, DIVIDER_Y, TFT_WIDTH, 2, COLOR_ACCENT_DIM);
 
-    // Plant image - scaled to fill everything below divider
+    //  Plant image — scaled to fill everything below divider
     const int imgY = DIVIDER_Y + 2;
 
     uint32_t now = millis();
@@ -289,7 +289,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     }
 }
 
-// Error screen
+//  Error screen
 
 void DisplayManager::showError(const String &message)
 {

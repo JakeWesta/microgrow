@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <FastLED.h>
 #include <PubSubClient.h>
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
