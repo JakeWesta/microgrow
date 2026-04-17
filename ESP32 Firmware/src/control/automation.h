@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../hardware/sensors.h"
-#include "../hardware/actuators.h"
+#include <hardware/sensors.h>
+#include <hardware/actuators.h>
 
 // Target environmental parameters
 struct EnvironmentalTargets

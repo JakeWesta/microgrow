@@ -1,5 +1,5 @@
 #include "scheduler.h"
-#include "../config/config.h"
+#include <config/config.h>
 #include <time.h>
 
 // ============================================================================

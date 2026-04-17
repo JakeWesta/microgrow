@@ -6,8 +6,8 @@
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
 #include <functional>
-#include "../hardware/display.h"
-#include "../storage/persistence.h"
+#include <hardware/display.h>
+#include <storage/persistence.h>
 
 // Forward declarations
 class ActuatorManager;

@@ -1,5 +1,5 @@
 #include "sensors.h"
-#include "../config/pins.h"
+#include <config/pins.h>
 #include <Wire.h>
 
 SensorManager::SensorManager()
@@ -14,7 +14,7 @@ bool SensorManager::begin()
     dht20.begin();
     pinMode(PIN_WATER_LEVEL, INPUT);
     Serial.println("Sensors initialized");
-    
+
     return true;
 }
 
@@ -48,22 +48,22 @@ bool SensorManager::readWaterLevel()
 bool SensorManager::readDHT20()
 {
     uint32_t now = millis();
-    
+
     // Don't read DHT20 more than once per 2 seconds
     if (now - lastReadTime < 2000)
     {
         return lastDHT20Valid;
     }
-    
+
     lastReadTime = now;
     int status = dht20.read();
-    
+
     if (status != DHT20_OK)
     {
         lastDHT20Valid = false;
         return false;
     }
-    
+
     lastDHT20Valid = true;
     return true;
 }
@@ -75,15 +75,14 @@ SensorReadings SensorManager::read()
     readings.temperature = readTemperature();
     readings.humidity = readHumidity();
     readings.waterLevelLow = readWaterLevel();
-    
+
     readings.valid = !isnan(readings.temperature) &&
                      !isnan(readings.humidity);
-    
+
     if (readings.valid)
     {
         lastReadings = readings;
     }
 
-    
     return readings;
 }

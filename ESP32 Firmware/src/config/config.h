@@ -4,7 +4,6 @@
 
 // WiFi & Network
 #define WIFI_TIMEOUT_MS 10000
-#define WIFI_PORTAL_TIMEOUT_S 180
 #define WIFI_CONNECT_RETRIES 3
 
 // MQTT

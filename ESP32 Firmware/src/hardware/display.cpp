@@ -254,7 +254,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     tft.fillRect(0, STATUS_H + 1, TFT_WIDTH, DIVIDER_Y - STATUS_H + 2, COLOR_BG);
     yield();
 
-    //  Temperature — top left
+    //  Temperature - top left
     // size 4 = 24px wide × 32px tall per char
     String tempStr = String(temp, 1) + " F";
     tft.setTextSize(4);
@@ -262,7 +262,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     tft.setCursor(4, SENSOR_Y);
     tft.print(tempStr);
 
-    //  Humidity — top right
+    //  Humidity - top right
     String humStr = String(humidity, 1) + " %";
     uint16_t humW = humStr.length() * 24; // 24px per char at size 4
     tft.setTextColor(COLOR_GREEN_OK, COLOR_BG);
@@ -272,7 +272,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     //  Divider
     tft.fillRect(0, DIVIDER_Y, TFT_WIDTH, 2, COLOR_ACCENT_DIM);
 
-    //  Plant image — scaled to fill everything below divider
+    //  Plant image - scaled to fill everything below divider
     const int imgY = DIVIDER_Y + 2;
 
     uint32_t now = millis();
@@ -287,6 +287,31 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
         int imgX = (TFT_WIDTH - imgWidth) / 2;
         drawImage(filename.c_str(), imgX, imgY);
     }
+}
+
+//  Shutdown screen
+
+void DisplayManager::showShutdown()
+{
+    state = DisplayState::SHUTDOWN;
+    clear();
+
+    // Full-screen dark red background band across the middle
+    tft.fillRect(0, 70, TFT_WIDTH, 100, 0x3000); // dark red
+
+    // Top border line
+    tft.drawFastHLine(0, 70, TFT_WIDTH, COLOR_ERROR);
+    // Bottom border line
+    tft.drawFastHLine(0, 170, TFT_WIDTH, COLOR_ERROR);
+
+    // Main message
+    drawCenteredText("Safe to Unplug", 90, 3, COLOR_WHITE);
+
+    // Sub-message
+    drawCenteredText("All systems off", 128, 2, COLOR_GRAY);
+
+    // Small footer hint
+    drawCenteredText("MicroGrow", 195, 2, COLOR_ACCENT_DIM);
 }
 
 //  Error screen
@@ -339,6 +364,11 @@ void DisplayManager::showQRCode(const String &data)
 
 void DisplayManager::setWiFiStatus(bool connected)
 {
+    // Ignore status bar updates once we're on the shutdown screen -
+    // the network task may still be running as the sequence completes.
+    if (state == DisplayState::SHUTDOWN)
+        return;
+
     if (wifiConnected != connected)
     {
         wifiConnected = connected;
@@ -357,6 +387,9 @@ void DisplayManager::setWiFiStatus(bool connected)
 
 void DisplayManager::setMQTTStatus(bool connected)
 {
+    if (state == DisplayState::SHUTDOWN)
+        return;
+
     if (mqttConnected != connected)
     {
         mqttConnected = connected;

@@ -1,5 +1,5 @@
 #include "automation.h"
-#include "../config/config.h"
+#include <config/config.h>
 
 AutomationController::AutomationController(SensorManager &sensors, ActuatorManager &actuators)
     : sensors(sensors), actuators(actuators), enabled(false), lastFanChange(0), lastMisterChange(0)
@@ -110,7 +110,7 @@ void AutomationController::controlMister(const SensorReadings &readings)
     }
 }
 
-void AutomationController::controlLED(const SensorReadings &readings)       // TODO: Test this
+void AutomationController::controlLED(const SensorReadings &readings) // TODO: Test this
 {
     LEDStrip &leds = actuators.getLEDs();
     Mister &mister = actuators.getMister();
@@ -129,5 +129,4 @@ void AutomationController::controlLED(const SensorReadings &readings)       // T
     }
 
     // other feedback colors
-
 }

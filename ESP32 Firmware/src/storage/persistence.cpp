@@ -70,7 +70,7 @@ void PersistenceManager::clear()
     Serial.println("Configuration cleared from NVS");
 }
 
-//  Reading ring buffer
+// ── Reading ring buffer ───────────────────────────────────────────────────────
 
 static void readingKey(char *buf, uint8_t slot)
 {
@@ -150,6 +150,16 @@ void PersistenceManager::getAllReadings(StoredReading *out)
     }
 
     prefs.end();
+}
+
+void PersistenceManager::flushPendingReading(float temperature, float humidity, time_t timestamp)
+{
+    StoredReading r;
+    r.temperature = temperature;
+    r.humidity = humidity;
+    r.timestamp = timestamp;
+    saveReading(r);
+    Serial.printf("Shutdown flush: Temp=%.1fF, Hum=%.1f%%\n", temperature, humidity);
 }
 
 void PersistenceManager::clearReadings()

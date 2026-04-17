@@ -20,12 +20,22 @@ EspWiFiManager *wifiMgr = nullptr;
 PersistenceManager *storage = nullptr;
 MQTTClient *mqttClient = nullptr;
 
-// ISR for WiFi reset button
+// ISR flags
 volatile bool resetWiFiRequested = false;
+volatile bool shutdownRequested = false;
+
+volatile bool shutdownComplete = false;
 
 void IRAM_ATTR handleResetButton()
 {
+    Serial.println("Wifi button");
     resetWiFiRequested = true;
+}
+
+void IRAM_ATTR handlePowerButton()
+{
+    Serial.println("Shutdown button");
+    shutdownRequested = true;
 }
 
 // FreeRTOS Tasks
@@ -33,6 +43,8 @@ void sensorTask(void *param);
 void actuatorTask(void *param);
 void scheduleTask(void *param);
 void networkTask(void *param);
+
+//  Helpers
 
 static void applyConfig(const DeviceConfig &config)
 {
@@ -52,13 +64,71 @@ static void applyConfig(const DeviceConfig &config)
     if (config.blackout)
         scheduler->getLightSchedule().pause();
 }
+
+static void performShutdown()
+{
+    Serial.println("\n=== Shutdown requested ===");
+
+    // 1. Stop automation and schedules - prevents core-1 tasks from issuing
+    //    further actuator commands or NVS writes while we work.
+    if (automation)
+        automation->disable();
+
+    if (scheduler)
+    {
+        scheduler->getLightSchedule().disable();
+        scheduler->getWaterSchedule().disable();
+    }
+
+    // 2. Signal tasks to stop, then give core 1 one tick to exit any open
+    //    prefs.begin()/putBytes()/end() sequence it may be mid-flight in.
+    shutdownComplete = true;
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    // 3. Flush NVS - commit a final sensor reading so data from the current
+    //    interval is not lost if the user unplugs before the next periodic save.
+    if (sensors && storage)
+    {
+        SensorReadings r = sensors->read();
+        if (r.valid)
+        {
+            time_t now_t;
+            time(&now_t);
+            storage->flushPendingReading(r.temperature, r.humidity, now_t);
+        }
+    }
+
+    // 4. All actuators off - pump, fan, mister, LEDs
+    if (actuators)
+        actuators->allOff();
+
+    // 5. Clean network disconnect
+    if (mqttClient && mqttClient->isConnected())
+    {
+        mqttClient->publishStatus("offline");
+        mqttClient->disconnect();
+    }
+    if (wifiMgr && wifiMgr->isConnected())
+    {
+        WiFi.disconnect(true);
+        Serial.println("WiFi disconnected");
+    }
+
+    // 6. Shutdown screen + solid red LEDs
+    if (display)
+        display->showShutdown();
+    if (actuators)
+        actuators->getLEDs().setColor(CRGB::Red);
+
+    Serial.println("=== Safe to unplug ===\n");
+}
+
 void setup()
 {
     Serial.begin(SERIAL_BAUD);
     delay(1000);
     Serial.println("\n\n=== MicroGrow Starting ===");
 
-    // Initialize objects in controlled order
     Serial.println("1. Creating display...");
     display = new DisplayManager();
     display->begin();
@@ -91,9 +161,11 @@ void setup()
     wifiMgr = new EspWiFiManager();
     yield();
 
-    // Setup WiFi reset button
+    // Setup buttons
     pinMode(PIN_WIFI_BUTTON, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(PIN_WIFI_BUTTON), handleResetButton, FALLING);
+    pinMode(PIN_POWER_BUTTON, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(PIN_POWER_BUTTON), handlePowerButton, FALLING);
 
     Serial.println("8. Creating MQTT client...");
     mqttClient = &MQTTClient::getInstance(wifiMgr->getDeviceId());
@@ -124,7 +196,9 @@ void setup()
         storage->saveConfig(cfg);
     };
     cbs.onDelete = []()
-    { storage->clear(); };
+    {
+        storage->clear();
+    };
 
     mqttClient->setCallbacks(cbs);
 
@@ -156,31 +230,31 @@ void setup()
         [=]()
         { actuators->getLEDs().off(); });
 
-    // Initialize WiFi
-    Serial.println("9. Starting WiFi...");
-    Serial.printf("Device ID: %s\n", wifiMgr->getDeviceId().c_str());
-    if (!wifiMgr->begin())
-    {
-        Serial.println("Starting WiFi configuration portal...");
-        display->showWiFiSetup(wifiMgr->getDeviceId());
-        wifiMgr->startConfigPortal();
-    }
-    yield();
+    // // Initialize WiFi
+    // Serial.println("9. Starting WiFi...");
+    // Serial.printf("Device ID: %s\n", wifiMgr->getDeviceId().c_str());
+    // if (!wifiMgr->begin())
+    // {
+    //     Serial.println("Starting WiFi configuration portal...");
+    //     display->showWiFiSetup(wifiMgr->getDeviceId());
+    //     wifiMgr->startConfigPortal();
+    // }
+    // yield();
 
-    // Initialize MQTT
-    Serial.println("10. Starting MQTT...");
-    mqttClient->begin(storage->isConfigured(), config.greenType, config.growth);
-    yield();
+    // // Initialize MQTT
+    // Serial.println("10. Starting MQTT...");
+    // mqttClient->begin(storage->isConfigured(), config.greenType, config.growth);
+    // yield();
 
-    // Flash LEDs teal on successful WiFi/MQTT setup
-    actuators->getLEDs().flash(CRGB::Teal);
+    // // Flash LEDs teal on successful WiFi/MQTT setup
+    // actuators->getLEDs().flash(CRGB::Teal);
 
-    // Start FreeRTOS tasks
-    Serial.println("11. Creating FreeRTOS tasks...");
-    xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
-    xTaskCreatePinnedToCore(actuatorTask, "Actuator", 8192, NULL, 1, NULL, 1);
-    xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
-    xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
+    // // Start FreeRTOS tasks
+    // Serial.println("11. Creating FreeRTOS tasks...");
+    // xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
+    // xTaskCreatePinnedToCore(actuatorTask, "Actuator", 8192, NULL, 1, NULL, 1);
+    // xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
+    // xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
 
     // Flash LEDs green when setup is complete
     actuators->getLEDs().flash(CRGB::Green);
@@ -189,6 +263,15 @@ void setup()
 
 void loop()
 {
+    if (shutdownRequested)
+    {
+        shutdownRequested = false;
+        performShutdown();
+        // Block loop() permanently - device stays alive to show the screen
+        while (true)
+            vTaskDelay(portMAX_DELAY);
+    }
+
     if (resetWiFiRequested)
     {
         resetWiFiRequested = false;
@@ -197,7 +280,7 @@ void loop()
         wifiMgr->resetCredentials();
     }
 
-    vTaskDelay(portMAX_DELAY);
+    vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
 // ============================================================================
@@ -210,6 +293,9 @@ void sensorTask(void *param)
 
     while (true)
     {
+        if (shutdownComplete)
+            vTaskSuspend(nullptr);
+
         SensorReadings readings = sensors->read();
 
         if (wifiMgr->isConnected() && mqttClient->isInitialized() && readings.valid)
@@ -230,6 +316,9 @@ void actuatorTask(void *param)
 
     while (true)
     {
+        if (shutdownComplete)
+            vTaskSuspend(nullptr);
+
         automation->update();
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(ACTUATOR_UPDATE_INTERVAL_MS));
     }
@@ -239,26 +328,27 @@ void scheduleTask(void *param)
 {
     TickType_t lastWakeTime = xTaskGetTickCount();
     int retryCount = 0;
-    const int maxRetries = 60; // Wait up to 60 seconds for time sync
+    const int maxRetries = 60;
 
     while (!Scheduler::isTimeValid() && retryCount < maxRetries)
     {
+        if (shutdownComplete)
+            vTaskSuspend(nullptr);
         Serial.println("Waiting for NTP time sync...");
         vTaskDelay(pdMS_TO_TICKS(1000));
         retryCount++;
     }
 
     if (!Scheduler::isTimeValid())
-    {
         Serial.println("WARNING: Scheduler starting without valid time");
-    }
     else
-    {
         Serial.println("Scheduler started with valid time");
-    }
 
     while (true)
     {
+        if (shutdownComplete)
+            vTaskSuspend(nullptr);
+
         scheduler->update();
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SCHEDULE_CHECK_INTERVAL_MS));
     }
@@ -274,6 +364,9 @@ void networkTask(void *param)
 
     while (true)
     {
+        if (shutdownComplete)
+            vTaskSuspend(nullptr);
+
         if (!wifiMgr->isConnected())
         {
             display->setWiFiStatus(false);
@@ -285,8 +378,6 @@ void networkTask(void *param)
         }
         else
         {
-            // setWiFiStatus now automatically upgrades the WiFi-setup screen
-            // to "WiFi OK - Awaiting config..." when we're still in setup state.
             display->setWiFiStatus(true);
         }
 
@@ -304,6 +395,7 @@ void networkTask(void *param)
 
                 if (mqttClient->isInitialized())
                 {
+                    // Periodic sensor publish
                     TickType_t now = xTaskGetTickCount();
                     if (now - lastPublish > pdMS_TO_TICKS(MQTT_PUBLISH_INTERVAL_MS))
                     {
@@ -319,6 +411,7 @@ void networkTask(void *param)
                         }
                     }
 
+                    // Periodic NVS reading save
                     time_t now_t;
                     time(&now_t);
                     if (now_t - lastReading >= READING_SAVE_INTERVAL_S)

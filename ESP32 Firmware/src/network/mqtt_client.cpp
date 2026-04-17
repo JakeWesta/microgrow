@@ -1,8 +1,8 @@
 #include "mqtt_client.h"
-#include "../config/config.h"
-#include "../control/automation.h"
-#include "../control/scheduler.h"
-#include "../hardware/actuators.h"
+#include <config/config.h>
+#include <control/automation.h>
+#include <control/scheduler.h>
+#include <hardware/actuators.h>
 
 MQTTClient *MQTTClient::instance = nullptr;
 
@@ -35,7 +35,7 @@ bool MQTTClient::begin(bool alreadyConfigured, const String &gt, const String &g
   else
   {
     initState = InitState::UNCONFIGURED;
-    Serial.println("MQTT: awaiting /init message");
+    Serial.println("MQTT: /init message required");
   }
 
   client.setServer(MQTT_BROKER, MQTT_PORT);

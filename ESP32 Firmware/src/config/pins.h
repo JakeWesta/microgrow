@@ -1,7 +1,8 @@
 #pragma once
 
 // Button for WiFi reset
-#define PIN_WIFI_BUTTON 4
+#define PIN_WIFI_BUTTON 12
+#define PIN_POWER_BUTTON 4
 
 // LED Strip
 #define PIN_LED_STRIP 25

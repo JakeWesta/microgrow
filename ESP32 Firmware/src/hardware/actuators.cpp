@@ -1,6 +1,6 @@
 #include "actuators.h"
-#include "../config/pins.h"
-#include "../config/config.h"
+#include <config/pins.h>
+#include <config/config.h>
 
 // ============================================================================
 // Fan

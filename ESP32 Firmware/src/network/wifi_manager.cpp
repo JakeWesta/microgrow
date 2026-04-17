@@ -1,5 +1,5 @@
 #include "wifi_manager.h"
-#include "../config/config.h"
+#include <config/config.h>
 
 EspWiFiManager::EspWiFiManager()
     : configured(false), lastReconnectAttempt(0)
@@ -50,7 +50,6 @@ bool EspWiFiManager::startConfigPortal()
     WiFi.disconnect(true);
     delay(100);
 
-    wm.setConfigPortalTimeout(WIFI_PORTAL_TIMEOUT_S);
     wm.setConnectTimeout(30);
     wm.setConnectRetries(WIFI_CONNECT_RETRIES);
 
@@ -81,7 +80,6 @@ void EspWiFiManager::resetCredentials()
     WiFi.disconnect(true);
     wm.resetSettings();
     delay(1000);
-    ESP.restart();
 }
 
 bool EspWiFiManager::isConnected() const

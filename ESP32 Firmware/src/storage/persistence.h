@@ -45,6 +45,8 @@ public:
     void getAllReadings(StoredReading *out);
     void clearReadings();
 
+    void flushPendingReading(float temperature, float humidity, time_t timestamp);
+
 private:
     Preferences prefs;
     static constexpr const char *NAMESPACE = "microgrow";

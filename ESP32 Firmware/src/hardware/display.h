@@ -12,7 +12,8 @@ enum class DisplayState
     WIFI_SETUP,      // AP mode – waiting for user to join hotspot
     WIFI_CONNECTING, // WiFi joined – waiting for MQTT init/config to complete
     RUNNING,
-    ERROR
+    ERROR,
+    SHUTDOWN // Safe-to-unplug screen
 };
 
 class DisplayManager
@@ -31,6 +32,7 @@ public:
     void showSensorData(float temp, float humidity, bool waterLow);
     void showError(const String &message);
     void showQRCode(const String &data);
+    void showShutdown(); // Safe-to-unplug screen
 
     // Filename
     void setGreenType(const String &gt) { greenType = gt; }
@@ -51,7 +53,7 @@ private:
     SdFat SD;
     uint8_t animation_step;
     uint32_t last_animation_ms;
-    static constexpr uint32_t ANIMATION_FRAME_MS = 500; // frame rate
+    static constexpr uint32_t ANIMATION_FRAME_MS = 500;
     static constexpr uint8_t ANIMATION_FRAMES = 1;
 
     DisplayState state;
