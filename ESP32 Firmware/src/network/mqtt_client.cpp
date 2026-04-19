@@ -38,6 +38,7 @@ bool MQTTClient::begin(bool alreadyConfigured, const String &gt, const String &g
     Serial.println("MQTT: /init message required");
   }
 
+  client.setBufferSize(512);
   client.setServer(MQTT_BROKER, MQTT_PORT);
   client.setCallback(staticCallback);
   client.setKeepAlive(MQTT_KEEPALIVE_S);

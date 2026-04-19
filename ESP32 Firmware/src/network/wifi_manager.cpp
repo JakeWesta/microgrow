@@ -43,7 +43,7 @@ bool EspWiFiManager::begin()
     return false;
 }
 
-bool EspWiFiManager::startConfigPortal()
+bool EspWiFiManager::runConfigPortal(std::function<bool()> shouldAbort)
 {
     Serial.println("Starting WiFi configuration portal...");
 
@@ -53,25 +53,42 @@ bool EspWiFiManager::startConfigPortal()
     wm.setConnectTimeout(30);
     wm.setConnectRetries(WIFI_CONNECT_RETRIES);
 
-    // Customize portal
+    // Customize portal appearance
     std::vector<const char *> menu = {"wifi", "info"};
     wm.setMenu(menu);
     wm.setTitle("MicroGrow Setup");
     wm.setHostname(deviceId.c_str());
 
-    // Start portal with SSID
-    bool success = wm.startConfigPortal("MicroGrow Setup");
+    // Non-blocking mode - we drive the loop ourselves so we can check
+    // the abort predicate on every iteration
+    wm.setConfigPortalBlocking(false);
+    wm.startConfigPortal("MicroGrow Setup");
 
+    while (wm.getConfigPortalActive())
+    {
+        if (shouldAbort && shouldAbort())
+        {
+            Serial.println("Config portal aborted by caller");
+            wm.stopConfigPortal();
+            return false;
+        }
+        wm.process();
+        vTaskDelay(pdMS_TO_TICKS(10)); // yield to FreeRTOS scheduler
+    }
+
+    bool success = (WiFi.status() == WL_CONNECTED);
     if (success)
     {
         Serial.println("WiFi configured successfully");
         configured = true;
         printStatus();
-        return true;
+    }
+    else
+    {
+        Serial.println("WiFi configuration failed or timeout");
     }
 
-    Serial.println("WiFi configuration failed or timeout");
-    return false;
+    return success;
 }
 
 void EspWiFiManager::resetCredentials()
@@ -93,16 +110,12 @@ bool EspWiFiManager::reconnect()
 
     // Throttle reconnection attempts
     if (now - lastReconnectAttempt < MQTT_RECONNECT_DELAY_MS)
-    {
         return false;
-    }
 
     lastReconnectAttempt = now;
 
     if (isConnected())
-    {
         return true;
-    }
 
     Serial.println("Attempting WiFi reconnection...");
     WiFi.disconnect();
@@ -127,6 +140,17 @@ bool EspWiFiManager::reconnect()
     }
 
     return success;
+}
+
+bool EspWiFiManager::disconnect()
+{
+    if (isConnected())
+    {
+        WiFi.disconnect();
+        Serial.println("WiFi disconnected");
+        return true;
+    }
+    return false;
 }
 
 String EspWiFiManager::getMacAddress() const

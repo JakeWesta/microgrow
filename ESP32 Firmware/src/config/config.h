@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 // WiFi & Network
-#define WIFI_TIMEOUT_MS 10000
+#define WIFI_TIMEOUT_MS 5000
 #define WIFI_CONNECT_RETRIES 3
 
 // MQTT

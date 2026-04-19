@@ -23,19 +23,31 @@ MQTTClient *mqttClient = nullptr;
 // ISR flags
 volatile bool resetWiFiRequested = false;
 volatile bool shutdownRequested = false;
-
 volatile bool shutdownComplete = false;
+
+volatile uint32_t lastResetPress = 0;
+volatile uint32_t lastShutdownPress = 0;
+
+#define DEBOUNCE_MS 200
 
 void IRAM_ATTR handleResetButton()
 {
-    Serial.println("Wifi button");
-    resetWiFiRequested = true;
+    uint32_t now = millis();
+    if (now - lastResetPress > DEBOUNCE_MS)
+    {
+        lastResetPress = now;
+        resetWiFiRequested = true;
+    }
 }
 
 void IRAM_ATTR handlePowerButton()
 {
-    Serial.println("Shutdown button");
-    shutdownRequested = true;
+    uint32_t now = millis();
+    if (now - lastShutdownPress > DEBOUNCE_MS)
+    {
+        lastShutdownPress = now;
+        shutdownRequested = true;
+    }
 }
 
 // FreeRTOS Tasks
@@ -44,7 +56,9 @@ void actuatorTask(void *param);
 void scheduleTask(void *param);
 void networkTask(void *param);
 
-//  Helpers
+// ============================================================================
+// Helpers
+// ============================================================================
 
 static void applyConfig(const DeviceConfig &config)
 {
@@ -202,21 +216,15 @@ void setup()
 
     mqttClient->setCallbacks(cbs);
 
-    DeviceConfig config = storage->isConfigured() ? storage->loadConfig() : DeviceConfig();
-    mqttClient->begin(storage->isConfigured(), config.greenType, config.growth);
-
-    if (storage->isConfigured())
-    {
-        Serial.println("Loading saved configuration...");
-
-        DeviceConfig config = storage->loadConfig();
-
+    bool isConfigured = storage->isConfigured();
+    // Load config and prime MQTT with current state before WiFi comes up
+    DeviceConfig config = isConfigured ? storage->loadConfig() : DeviceConfig();
+    if (isConfigured)
         applyConfig(config);
-    }
     else
-    {
-        Serial.println("No saved configuration - awaiting setup");
-    }
+        config.growth = "seed";
+
+    mqttClient->begin(isConfigured, config.greenType, config.growth);
 
     scheduler->getWaterSchedule().setCallbacks(
         [=]()
@@ -230,36 +238,63 @@ void setup()
         [=]()
         { actuators->getLEDs().off(); });
 
-    // // Initialize WiFi
-    // Serial.println("9. Starting WiFi...");
-    // Serial.printf("Device ID: %s\n", wifiMgr->getDeviceId().c_str());
-    // if (!wifiMgr->begin())
-    // {
-    //     Serial.println("Starting WiFi configuration portal...");
-    //     display->showWiFiSetup(wifiMgr->getDeviceId());
-    //     wifiMgr->startConfigPortal();
-    // }
-    // yield();
+    // Initialize WiFi
+    Serial.println("9. Starting WiFi...");
+    Serial.printf("Device ID: %s\n", wifiMgr->getDeviceId().c_str());
 
-    // // Initialize MQTT
-    // Serial.println("10. Starting MQTT...");
-    // mqttClient->begin(storage->isConfigured(), config.greenType, config.growth);
-    // yield();
+    if (!wifiMgr->begin())
+    {
+        // No saved WiFi credentials - start config portal
+        WiFiSetupReason reason = isConfigured ? WiFiSetupReason::PORTAL_WITH_CONFIG : WiFiSetupReason::NO_WIFI_NO_CONFIG;
+        display->showWiFiSetup(wifiMgr->getDeviceId(), reason);
+        resetWiFiRequested = true;
+        wifiMgr->runConfigPortal([]()
+                                 { return (bool)shutdownRequested; });
+        resetWiFiRequested = false;
 
-    // // Flash LEDs teal on successful WiFi/MQTT setup
-    // actuators->getLEDs().flash(CRGB::Teal);
+        if (shutdownRequested)
+        {
+            shutdownRequested = false;
+            performShutdown();
+            while (true)
+                vTaskDelay(portMAX_DELAY);
+        }
+    }
+    else if (!isConfigured)
+    {
+        // WiFi connected but no DeviceConfig yet - MQTT will deliver it
+        display->showWiFiSetup(wifiMgr->getDeviceId(), WiFiSetupReason::WIFI_NO_CONFIG);
+    }
+    else
+    {
+        // Fully configured device reconnecting after reset/power cycle
+        display->showWiFiSetup(wifiMgr->getDeviceId(), WiFiSetupReason::CONFIG_NO_WIFI);
+    }
+    yield();
 
-    // // Start FreeRTOS tasks
-    // Serial.println("11. Creating FreeRTOS tasks...");
-    // xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
-    // xTaskCreatePinnedToCore(actuatorTask, "Actuator", 8192, NULL, 1, NULL, 1);
-    // xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
-    // xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
+    // Initialize MQTT
+    Serial.println("10. Starting MQTT...");
+    mqttClient->begin(isConfigured, config.greenType, config.growth);
+    yield();
+
+    // Flash LEDs teal on successful WiFi/MQTT setup
+    actuators->getLEDs().flash(CRGB::Teal);
+
+    // Start FreeRTOS tasks
+    Serial.println("11. Creating FreeRTOS tasks...");
+    xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(actuatorTask, "Actuator", 8192, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
 
     // Flash LEDs green when setup is complete
     actuators->getLEDs().flash(CRGB::Green);
     Serial.println("\n=== MicroGrow Ready ===\n");
 }
+
+// ============================================================================
+// Loop
+// ============================================================================
 
 void loop()
 {
@@ -274,13 +309,29 @@ void loop()
 
     if (resetWiFiRequested)
     {
-        resetWiFiRequested = false;
         Serial.println("WiFi reset requested");
-        display->showWiFiSetup(wifiMgr->getDeviceId());
+        wifiMgr->disconnect();
         wifiMgr->resetCredentials();
+
+        WiFiSetupReason reason = storage->isConfigured() ? WiFiSetupReason::PORTAL_WITH_CONFIG : WiFiSetupReason::NO_WIFI_NO_CONFIG;
+        display->showWiFiSetup(wifiMgr->getDeviceId(), reason);
+        display->setWiFiStatus(false);
+        display->setMQTTStatus(false);
+
+        wifiMgr->runConfigPortal([]()
+                                 { return (bool)shutdownRequested; });
+        resetWiFiRequested = false;
+
+        if (shutdownRequested)
+        {
+            shutdownRequested = false;
+            performShutdown();
+            while (true)
+                vTaskDelay(portMAX_DELAY);
+        }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(100));
 }
 
 // ============================================================================
@@ -296,14 +347,15 @@ void sensorTask(void *param)
         if (shutdownComplete)
             vTaskSuspend(nullptr);
 
-        SensorReadings readings = sensors->read();
-
-        if (wifiMgr->isConnected() && mqttClient->isInitialized() && readings.valid)
+        if (wifiMgr->isConnected() && mqttClient->isInitialized())
         {
-            display->showSensorData(
-                readings.temperature,
-                readings.humidity,
-                readings.waterLevelLow);
+            SensorReadings readings = sensors->read();
+
+            if (display /*&& readings.valid*/)
+                display->showSensorData(
+                    readings.temperature,
+                    readings.humidity,
+                    readings.waterLevelLow);
         }
 
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));
@@ -349,7 +401,8 @@ void scheduleTask(void *param)
         if (shutdownComplete)
             vTaskSuspend(nullptr);
 
-        scheduler->update();
+        if (wifiMgr->isConnected() && mqttClient->isInitialized())
+            scheduler->update();
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SCHEDULE_CHECK_INTERVAL_MS));
     }
 }
@@ -358,6 +411,7 @@ void networkTask(void *param)
 {
     TickType_t lastWakeTime = xTaskGetTickCount();
     TickType_t lastPublish = 0;
+    TickType_t lastMqttReconnect = 0;
     time_t lastReading = 0;
 
     configTime(TIMEZONE_OFFSET_S, DST_OFFSET_S, NTP_SERVER_1, NTP_SERVER_2);
@@ -369,33 +423,42 @@ void networkTask(void *param)
 
         if (!wifiMgr->isConnected())
         {
-            display->setWiFiStatus(false);
-            Serial.println("WiFi disconnected, attempting reconnect...");
+            if (resetWiFiRequested)
+            {
+                vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(100));
+                continue;
+            }
 
-            // Flash LEDs orange while trying to reconnect
+            display->setWiFiStatus(false);
+            display->setMQTTStatus(false);
+            Serial.println("WiFi disconnected, attempting reconnect...");
             actuators->getLEDs().flash(CRGB::Orange4);
             wifiMgr->reconnect();
         }
         else
         {
             display->setWiFiStatus(true);
-        }
 
-        if (wifiMgr->isConnected())
-        {
             if (!mqttClient->isConnected())
             {
                 display->setMQTTStatus(false);
-                mqttClient->connect();
+
+                TickType_t now = xTaskGetTickCount();
+                if (now - lastMqttReconnect > pdMS_TO_TICKS(MQTT_RECONNECT_DELAY_MS))
+                {
+                    lastMqttReconnect = now;
+                    Serial.println("MQTT disconnected, attempting reconnect...");
+                    mqttClient->connect();
+                }
             }
             else
             {
                 display->setMQTTStatus(true);
+                lastMqttReconnect = 0;
                 mqttClient->loop();
 
                 if (mqttClient->isInitialized())
                 {
-                    // Periodic sensor publish
                     TickType_t now = xTaskGetTickCount();
                     if (now - lastPublish > pdMS_TO_TICKS(MQTT_PUBLISH_INTERVAL_MS))
                     {
@@ -411,7 +474,6 @@ void networkTask(void *param)
                         }
                     }
 
-                    // Periodic NVS reading save
                     time_t now_t;
                     time(&now_t);
                     if (now_t - lastReading >= READING_SAVE_INTERVAL_S)

@@ -19,16 +19,11 @@ void AutomationController::setTargets(float temperature, float humidity)
 void AutomationController::update()
 {
     if (!enabled || !targets.valid)
-    {
         return;
-    }
 
     SensorReadings readings = sensors.read();
     if (!readings.valid)
-    {
-        Serial.println("Automation: Invalid sensor readings");
         return;
-    }
 
     // Control actuators based on sensor readings
     controlFan(readings);

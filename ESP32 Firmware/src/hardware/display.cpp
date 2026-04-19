@@ -5,21 +5,19 @@
 #include <SPI.h>
 
 //  Color Palette
-// Black background, vivid neon accents
-#define COLOR_BG ILI9341_BLACK  // 0xF2FFF3
-#define COLOR_SURFACE 0x1863    // Dark charcoal (status bar)
-#define COLOR_ACCENT 0x07E0     // Electric green  #00FF00
-#define COLOR_ACCENT_DIM 0x03E0 // Mid green       #007800  (labels)
-#define COLOR_CYAN 0x07FF       // Bright cyan     #00FFFF
-#define COLOR_GREEN_OK 0x07E0   // Electric green  (water OK)
-#define COLOR_WARN 0xFFE0       // Bright yellow   #FFFF00  (water LOW)
-#define COLOR_ERROR 0xF9A6      // Hot coral red
+#define COLOR_BG ILI9341_BLACK
+#define COLOR_SURFACE 0x1863
+#define COLOR_ACCENT 0x07E0
+#define COLOR_ACCENT_DIM 0x03E0
+#define COLOR_CYAN 0x07FF
+#define COLOR_GREEN_OK 0x07E0
+#define COLOR_WARN 0xFFE0
+#define COLOR_ERROR 0xF9A6
 #define COLOR_WHITE ILI9341_WHITE
 #define COLOR_BLACK ILI9341_BLACK
-#define COLOR_GRAY 0xC618      // Light gray      (secondary text)
-#define COLOR_DARK_GRAY 0x4208 // Dim gray        (dividers)
+#define COLOR_GRAY 0xC618
+#define COLOR_DARK_GRAY 0x4208
 
-// Status bar height
 #define STATUS_H 26
 
 DisplayManager::DisplayManager()
@@ -28,7 +26,7 @@ DisplayManager::DisplayManager()
       lastTemp(0), lastHumidity(0), lastWaterLow(false),
       _deviceId(""),
       greenType(""),
-      growth("seed"),
+      growth(""),
       reader(SD),
       animation_step(0),
       last_animation_ms(0)
@@ -64,13 +62,10 @@ void DisplayManager::setBrightness(uint8_t level)
     // ILI9341 doesn't have software brightness control
 }
 
-//  Text helpers
+// ============================================================================
+// Text helpers
+// ============================================================================
 
-/**
- * Returns the pixel width of `text` at the given text size.
- * Each character in the Adafruit GFX default font is 6px wide (5px + 1 gap),
- * scaled by `size`. This avoids getTextBounds quirks with y-offsets.
- */
 static uint16_t measureTextWidth(const String &text, uint8_t size)
 {
     return text.length() * 6 * size;
@@ -79,13 +74,11 @@ static uint16_t measureTextWidth(const String &text, uint8_t size)
 void DisplayManager::drawCenteredText(const String &text, int y, uint8_t size, uint16_t color)
 {
     tft.setTextSize(size);
-    tft.setTextColor(color, COLOR_BG); // opaque background to prevent ghost text
-
+    tft.setTextColor(color, COLOR_BG);
     uint16_t textWidth = measureTextWidth(text, size);
     int16_t x = ((int16_t)TFT_WIDTH - (int16_t)textWidth) / 2;
     if (x < 0)
         x = 0;
-
     tft.setCursor(x, y);
     tft.print(text);
 }
@@ -102,128 +95,171 @@ void DisplayManager::drawRightText(const String &text, int y, uint8_t size, uint
     tft.print(text);
 }
 
-//  Status bar
+// ============================================================================
+// Status bar
+// ============================================================================
 
 void DisplayManager::drawStatusBar()
 {
-    // Gradient-like effect: solid bar with a thin accent line below
     tft.fillRect(0, 0, TFT_WIDTH, STATUS_H, COLOR_SURFACE);
     tft.drawFastHLine(0, STATUS_H, TFT_WIDTH, COLOR_ACCENT_DIM);
     yield();
 
     tft.setTextSize(2);
 
-    // WiFi indicator – left
     uint16_t wifiColor = wifiConnected ? COLOR_GREEN_OK : COLOR_ERROR;
     tft.setTextColor(wifiColor, COLOR_SURFACE);
     tft.setCursor(4, 5);
     tft.print(wifiConnected ? "WiFi+" : "WiFi-");
 
-    // MQTT indicator – right
     uint16_t mqttColor = mqttConnected ? COLOR_GREEN_OK : COLOR_ERROR;
     tft.setTextColor(mqttColor, COLOR_SURFACE);
     tft.setCursor(TFT_WIDTH - 66, 5);
     tft.print(mqttConnected ? "MQTT+" : "MQTT-");
 }
 
-//  Section header (reusable)
-
 void DisplayManager::drawPageHeader(const String &title, uint16_t color)
 {
-    // Title centered around y=36 (below status bar)
     drawCenteredText(title, 36, 3, color);
-    // Decorative underline
     uint16_t lineW = measureTextWidth(title, 3);
     int16_t lineX = (TFT_WIDTH - lineW) / 2;
     tft.drawFastHLine(lineX, 36 + 3 * 8 + 2, lineW, color);
 }
 
-//  Boot screen
+// ============================================================================
+// Boot screen
+// ============================================================================
 
 void DisplayManager::showBoot()
 {
     state = DisplayState::BOOT;
     clear();
     drawStatusBar();
-
-    // Logo / wordmark
     drawCenteredText("MicroGrow", 90, 5, COLOR_ACCENT);
-
-    // Tagline
     drawCenteredText("Smart Plant System", 138, 2, COLOR_CYAN);
-
-    // Status
     drawCenteredText("Initializing...", 175, 2, COLOR_ACCENT_DIM);
 }
 
-//  WiFi setup / connecting screens
+// ============================================================================
+// WiFi setup screen
+//
+// Renders differently based on current DisplayState:
+//
+//   WIFI_SETUP_FRESH   - no WiFi, no config: "Connect to hotspot, open app"
+//   WIFI_SETUP_NO_CFG  - WiFi connected, no config: "WiFi OK, awaiting config"
+//   WIFI_SETUP_NO_WIFI - config exists, no WiFi: "Reconnecting..."
+//  WIFI_SETUP_PORTAL_CFG - user requested portal, config exists: "Previously configured, waiting for WiFi"
+// ============================================================================
 
-/**
- * Internal helper: renders the WiFi setup layout.
- * `phase` controls the status line:
- *   0 = "Connect to hotspot below"  (AP not yet joined)
- *   1 = "WiFi connected! Awaiting setup..." (AP joined, config in progress)
- */
-void DisplayManager::_renderWiFiSetup(uint8_t phase)
+void DisplayManager::showWiFiSetup(const String &deviceId, WiFiSetupReason reason)
+{
+    _deviceId = deviceId;
+
+    switch (reason)
+    {
+    case WiFiSetupReason::NO_WIFI_NO_CONFIG:
+        state = DisplayState::WIFI_SETUP_FRESH;
+        break;
+    case WiFiSetupReason::WIFI_NO_CONFIG:
+        state = DisplayState::WIFI_SETUP_NO_CFG;
+        break;
+    case WiFiSetupReason::CONFIG_NO_WIFI:
+        state = DisplayState::WIFI_SETUP_NO_WIFI;
+        break;
+    case WiFiSetupReason::PORTAL_WITH_CONFIG:
+        state = DisplayState::WIFI_SETUP_PORTAL_CFG;
+        break;
+    }
+
+    _renderWiFiSetup();
+}
+
+void DisplayManager::_renderWiFiSetup()
 {
     clear();
     drawStatusBar();
 
-    //  Header
-    drawCenteredText("Device Setup", 32, 3, COLOR_ACCENT);
-    tft.drawFastHLine(10, 60, TFT_WIDTH - 20, COLOR_ACCENT_DIM);
+    //  Shared: header + device ID box
 
-    //  Hotspot section
-    drawCenteredText("Connect to:", 68, 2, COLOR_GRAY);
-    drawCenteredText("MicroGrow-Setup", 90, 2, COLOR_CYAN);
-
-    tft.drawFastHLine(10, 118, TFT_WIDTH - 20, COLOR_DARK_GRAY);
-
-    //  Device ID section
-    drawCenteredText("Device ID", 126, 2, COLOR_GRAY);
-
-    // Highlight box for device ID
-    uint16_t idW = measureTextWidth(_deviceId, 3);
-    int16_t idX = (TFT_WIDTH - idW) / 2;
-    tft.fillRect(idX - 8, 148, idW + 16, 26, COLOR_SURFACE);
-    tft.drawRect(idX - 9, 147, idW + 18, 28, COLOR_ACCENT);
-    tft.setTextColor(COLOR_ACCENT, COLOR_SURFACE);
-    tft.setTextSize(3);
-    tft.setCursor(idX, 151);
-    tft.print(_deviceId);
-
-    tft.drawFastHLine(10, 182, TFT_WIDTH - 20, COLOR_DARK_GRAY);
-
-    //  Status line
-    if (phase == 0)
+    if (state == DisplayState::WIFI_SETUP_NO_WIFI)
     {
-        drawCenteredText("Open app to configure", 190, 2, COLOR_GRAY);
-        drawCenteredText("after connecting", 212, 2, COLOR_GRAY);
+        drawCenteredText("Reconnecting...", 32, 3, COLOR_ACCENT);
     }
     else
     {
+        drawCenteredText("Device Setup", 32, 3, COLOR_ACCENT);
+    }
+    tft.drawFastHLine(10, 60, TFT_WIDTH - 20, COLOR_ACCENT_DIM);
+
+    if (state == DisplayState::WIFI_SETUP_FRESH ||
+        state == DisplayState::WIFI_SETUP_NO_CFG ||
+        state == DisplayState::WIFI_SETUP_PORTAL_CFG) // <-- Added this state
+    {
+        // Show hotspot SSID to connect to
+        drawCenteredText("Connect to:", 68, 2, COLOR_GRAY);
+        drawCenteredText("MicroGrow Setup", 90, 2, COLOR_CYAN);
+        tft.drawFastHLine(10, 118, TFT_WIDTH - 20, COLOR_DARK_GRAY);
+        drawCenteredText("Device ID", 126, 2, COLOR_GRAY);
+
+        uint16_t idW = measureTextWidth(_deviceId, 3);
+        int16_t idX = (TFT_WIDTH - idW) / 2;
+        tft.fillRect(idX - 8, 148, idW + 16, 26, COLOR_SURFACE);
+        tft.drawRect(idX - 9, 147, idW + 18, 28, COLOR_ACCENT);
+        tft.setTextColor(COLOR_ACCENT, COLOR_SURFACE);
+        tft.setTextSize(3);
+        tft.setCursor(idX, 151);
+        tft.print(_deviceId);
+
+        tft.drawFastHLine(10, 182, TFT_WIDTH - 20, COLOR_DARK_GRAY);
+    }
+    else // WIFI_SETUP_NO_WIFI
+    {
+        // Show device ID higher up since there's no hotspot instruction
+        drawCenteredText("Device ID", 74, 2, COLOR_GRAY);
+
+        uint16_t idW = measureTextWidth(_deviceId, 3);
+        int16_t idX = (TFT_WIDTH - idW) / 2;
+        tft.fillRect(idX - 8, 96, idW + 16, 26, COLOR_SURFACE);
+        tft.drawRect(idX - 9, 95, idW + 18, 28, COLOR_ACCENT);
+        tft.setTextColor(COLOR_ACCENT, COLOR_SURFACE);
+        tft.setTextSize(3);
+        tft.setCursor(idX, 99);
+        tft.print(_deviceId);
+
+        tft.drawFastHLine(10, 132, TFT_WIDTH - 20, COLOR_DARK_GRAY);
+    }
+
+    //  Bottom status line – differs per reason
+
+    if (state == DisplayState::WIFI_SETUP_FRESH)
+    {
+        // Not connected, no config - instruct user to connect and open app
+        drawCenteredText("Open app to configure", 190, 2, COLOR_GRAY);
+        drawCenteredText("after connecting", 212, 2, COLOR_GRAY);
+    }
+    else if (state == DisplayState::WIFI_SETUP_PORTAL_CFG)
+    {
+        drawCenteredText("Device already configured.", 190, 2, COLOR_GRAY);
+        drawCenteredText("Update WiFi if needed.", 212, 2, COLOR_GRAY);
+    }
+    else if (state == DisplayState::WIFI_SETUP_NO_CFG)
+    {
+        // WiFi connected, waiting for MQTT to deliver config
         tft.fillRect(10, 188, TFT_WIDTH - 20, 28, COLOR_SURFACE);
         tft.drawRect(10, 188, TFT_WIDTH - 20, 28, COLOR_GREEN_OK);
         drawCenteredText("WiFi OK - Awaiting cfg", 194, 2, COLOR_GREEN_OK);
     }
+    else // WIFI_SETUP_NO_WIFI
+    {
+        // Config exists but WiFi is down
+        drawCenteredText("Previously configured.", 144, 2, COLOR_GRAY);
+        drawCenteredText("Waiting for WiFi...", 166, 2, COLOR_GRAY);
+    }
 }
 
-void DisplayManager::showWiFiSetup(const String &deviceId)
-{
-    _deviceId = deviceId;
-    state = DisplayState::WIFI_SETUP;
-    _renderWiFiSetup(0);
-}
-
-void DisplayManager::showWiFiConnected()
-{
-    // Keep device ID on screen, just update status line
-    state = DisplayState::WIFI_CONNECTING;
-    _renderWiFiSetup(1);
-    drawStatusBar(); // refresh status bar to show WiFi green
-}
-
-//  Running / sensor screen
+// ============================================================================
+// Running / sensor screen
+// ============================================================================
 
 void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
 {
@@ -233,13 +269,6 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
         drawStatusBar();
     }
 
-    // bool changed = (state != DisplayState::RUNNING) ||
-    //                (fabsf(temp - lastTemp) > 0.5f) ||
-    //                (fabsf(humidity - lastHumidity) > 1.0f);
-
-    // if (!changed)
-    //     return;
-
     state = DisplayState::RUNNING;
     lastTemp = temp;
     lastHumidity = humidity;
@@ -247,34 +276,27 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
 
     drawStatusBar();
 
-    const int SENSOR_Y = STATUS_H + 15;           // y=41
-    const int DIVIDER_Y = STATUS_H + 15 + 40 + 4; // y=85  (32px text + padding)
+    const int SENSOR_Y = STATUS_H + 15;
+    const int DIVIDER_Y = STATUS_H + 15 + 40 + 4;
 
-    // Clear sensor row
     tft.fillRect(0, STATUS_H + 1, TFT_WIDTH, DIVIDER_Y - STATUS_H + 2, COLOR_BG);
     yield();
 
-    //  Temperature - top left
-    // size 4 = 24px wide × 32px tall per char
     String tempStr = String(temp, 1) + " F";
     tft.setTextSize(4);
     tft.setTextColor(COLOR_GREEN_OK, COLOR_BG);
     tft.setCursor(4, SENSOR_Y);
     tft.print(tempStr);
 
-    //  Humidity - top right
     String humStr = String(humidity, 1) + " %";
-    uint16_t humW = humStr.length() * 24; // 24px per char at size 4
+    uint16_t humW = humStr.length() * 24;
     tft.setTextColor(COLOR_GREEN_OK, COLOR_BG);
     tft.setCursor(TFT_WIDTH - humW - 4, SENSOR_Y);
     tft.print(humStr);
 
-    //  Divider
     tft.fillRect(0, DIVIDER_Y, TFT_WIDTH, 2, COLOR_ACCENT_DIM);
 
-    //  Plant image - scaled to fill everything below divider
     const int imgY = DIVIDER_Y + 2;
-
     uint32_t now = millis();
     if (now - last_animation_ms >= ANIMATION_FRAME_MS)
     {
@@ -283,38 +305,32 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
         int imgWidth = 0, imgHeight = 0;
         String filename = getFilename();
         reader.bmpDimensions(filename.c_str(), &imgWidth, &imgHeight);
-
         int imgX = (TFT_WIDTH - imgWidth) / 2;
         drawImage(filename.c_str(), imgX, imgY);
     }
 }
 
-//  Shutdown screen
+// ============================================================================
+// Shutdown screen
+// ============================================================================
 
 void DisplayManager::showShutdown()
 {
     state = DisplayState::SHUTDOWN;
     clear();
 
-    // Full-screen dark red background band across the middle
-    tft.fillRect(0, 70, TFT_WIDTH, 100, 0x3000); // dark red
-
-    // Top border line
+    tft.fillRect(0, 70, TFT_WIDTH, 100, 0x3000);
     tft.drawFastHLine(0, 70, TFT_WIDTH, COLOR_ERROR);
-    // Bottom border line
     tft.drawFastHLine(0, 170, TFT_WIDTH, COLOR_ERROR);
 
-    // Main message
     drawCenteredText("Safe to Unplug", 90, 3, COLOR_WHITE);
-
-    // Sub-message
     drawCenteredText("All systems off", 128, 2, COLOR_GRAY);
-
-    // Small footer hint
     drawCenteredText("MicroGrow", 195, 2, COLOR_ACCENT_DIM);
 }
 
-//  Error screen
+// ============================================================================
+// Error screen
+// ============================================================================
 
 void DisplayManager::showError(const String &message)
 {
@@ -325,11 +341,12 @@ void DisplayManager::showError(const String &message)
     tft.fillRect(0, STATUS_H + 1, TFT_WIDTH, 4, COLOR_ERROR);
     drawCenteredText("! ERROR !", 50, 4, COLOR_ERROR);
     tft.fillRect(0, 96, TFT_WIDTH, 4, COLOR_ERROR);
-
     drawCenteredText(message, 120, 2, COLOR_WHITE);
 }
 
-//  QR Code screen
+// ============================================================================
+// QR code screen
+// ============================================================================
 
 void DisplayManager::showQRCode(const String &data)
 {
@@ -346,42 +363,30 @@ void DisplayManager::showQRCode(const String &data)
 
     drawCenteredText("Scan to Register", 12, 2, COLOR_CYAN);
 
-    // White quiet zone
     tft.fillRect(offsetX - 6, offsetY - 6, qrPixelSize + 12, qrPixelSize + 12, COLOR_WHITE);
     tft.drawRect(offsetX - 7, offsetY - 7, qrPixelSize + 14, qrPixelSize + 14, COLOR_ACCENT);
 
     for (uint8_t y = 0; y < qrcode.size; y++)
-    {
         for (uint8_t x = 0; x < qrcode.size; x++)
         {
             uint16_t color = qrcode_getModule(&qrcode, x, y) ? COLOR_BLACK : COLOR_WHITE;
             tft.fillRect(offsetX + (x * scale), offsetY + (y * scale), scale, scale, color);
         }
-    }
 }
 
-//  Status helpers
+// ============================================================================
+// Status bar updates
+// ============================================================================
 
 void DisplayManager::setWiFiStatus(bool connected)
 {
-    // Ignore status bar updates once we're on the shutdown screen -
-    // the network task may still be running as the sequence completes.
     if (state == DisplayState::SHUTDOWN)
         return;
 
     if (wifiConnected != connected)
     {
         wifiConnected = connected;
-
-        // If we're on the setup screen and WiFi just connected, upgrade the view
-        if (connected && (state == DisplayState::WIFI_SETUP || state == DisplayState::WIFI_CONNECTING))
-        {
-            showWiFiConnected();
-        }
-        else
-        {
-            drawStatusBar();
-        }
+        drawStatusBar();
     }
 }
 
@@ -397,9 +402,11 @@ void DisplayManager::setMQTTStatus(bool connected)
     }
 }
 
-//  Image helper
+// ============================================================================
+// Image helper
+// ============================================================================
 
 void DisplayManager::drawImage(const String &filename, int x, int y)
 {
-    ImageReturnCode stat = reader.drawBMP(filename.c_str(), tft, x, y);
+    reader.drawBMP(filename.c_str(), tft, x, y);
 }

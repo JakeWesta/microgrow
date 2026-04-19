@@ -6,14 +6,25 @@
 #include <SD.h>
 #include "../config/pins.h"
 
+// Why the WiFi setup screen is being shown - drives which variant renders
+enum class WiFiSetupReason
+{
+    NO_WIFI_NO_CONFIG,  // Fresh device: no credentials, no config
+    WIFI_NO_CONFIG,     // WiFi connected but no DeviceConfig yet
+    CONFIG_NO_WIFI,     // DeviceConfig exists but WiFi is down
+    PORTAL_WITH_CONFIG, // User requested portal, but config exists
+};
+
 enum class DisplayState
 {
     BOOT,
-    WIFI_SETUP,      // AP mode – waiting for user to join hotspot
-    WIFI_CONNECTING, // WiFi joined – waiting for MQTT init/config to complete
+    WIFI_SETUP_FRESH,      // NO_WIFI_NO_CONFIG
+    WIFI_SETUP_NO_CFG,     // WIFI_NO_CONFIG
+    WIFI_SETUP_NO_WIFI,    // CONFIG_NO_WIFI
+    WIFI_SETUP_PORTAL_CFG, // PORTAL_WITH_CONFIG
     RUNNING,
     ERROR,
-    SHUTDOWN // Safe-to-unplug screen
+    SHUTDOWN,
 };
 
 class DisplayManager
@@ -27,19 +38,24 @@ public:
 
     // Screens
     void showBoot();
-    void showWiFiSetup(const String &deviceId);
-    void showWiFiConnected();
+
+    // Unified WiFi setup screen - renders based on reason
+    void showWiFiSetup(const String &deviceId, WiFiSetupReason reason);
+
     void showSensorData(float temp, float humidity, bool waterLow);
     void showError(const String &message);
     void showQRCode(const String &data);
-    void showShutdown(); // Safe-to-unplug screen
+    void showShutdown();
 
-    // Filename
+    // Image / animation
     void setGreenType(const String &gt) { greenType = gt; }
     void setGrowth(const String &g) { growth = g; }
-    String getFilename() const { return "/" + greenType + "-" + growth + "-" + String(animation_step) + ".bmp"; }
+    String getFilename() const
+    {
+        return "/" + greenType + "-" + growth + "-" + String(animation_step) + ".bmp";
+    }
 
-    // Status bar updates
+    // Status bar updates - ONLY redraws the status bar, never changes screen
     void setWiFiStatus(bool connected);
     void setMQTTStatus(bool connected);
 
@@ -71,7 +87,5 @@ private:
     void drawRightText(const String &text, int y, uint8_t size, uint16_t color);
     void drawStatusBar();
     void drawPageHeader(const String &title, uint16_t color);
-
-    // Internal WiFi screen renderer (phase 0 = AP, 1 = connected)
-    void _renderWiFiSetup(uint8_t phase);
+    void _renderWiFiSetup();
 };

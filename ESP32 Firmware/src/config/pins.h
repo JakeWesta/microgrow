@@ -25,4 +25,4 @@
 #define TFT_MISO 19
 
 // SD Card
-#define SD_CS 13
+#define SD_CS 2

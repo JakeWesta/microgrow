@@ -135,10 +135,6 @@ void LEDStrip::setColor(CRGB color)
     fill_solid(leds, numLeds, color);
     FastLED.show();
     ledOn = (color != CRGB::Black);
-
-    Serial.printf("LEDs: RGB(%d,%d,%d)%s\n",
-                  color.r, color.g, color.b,
-                  manualOverride ? " (manual)" : "");
 }
 
 void LEDStrip::setBrightness(uint8_t brightness)

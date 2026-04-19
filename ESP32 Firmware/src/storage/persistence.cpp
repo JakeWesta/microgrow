@@ -70,7 +70,7 @@ void PersistenceManager::clear()
     Serial.println("Configuration cleared from NVS");
 }
 
-// ── Reading ring buffer ───────────────────────────────────────────────────────
+//  Reading ring buffer
 
 static void readingKey(char *buf, uint8_t slot)
 {
