@@ -5,6 +5,7 @@
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <FastLED.h>
 #include "../hardware/display.h"
 #include "../storage/persistence.h"
 
