@@ -1,5 +1,4 @@
 #include "automation.h"
-#include <config/config.h>
 
 AutomationController::AutomationController(SensorManager &sensors, ActuatorManager &actuators)
     : sensors(sensors), actuators(actuators), enabled(false), lastFanChange(0), lastMisterChange(0)
@@ -105,11 +104,11 @@ void AutomationController::controlMister(const SensorReadings &readings)
     }
 }
 
-void AutomationController::controlLED(const SensorReadings &readings) // TODO: Test this
+void AutomationController::controlLED(const SensorReadings &readings)
 {
     LEDStrip &leds = actuators.getLEDs();
     Mister &mister = actuators.getMister();
-    WaterPump &pump = actuators.getPump();
+    WaterPump &pump = actuators.getPump1();
 
     // Water level LOW --> Flash LEDs dark blue
     if (readings.waterLevelLow)

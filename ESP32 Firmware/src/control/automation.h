@@ -2,6 +2,7 @@
 
 #include <hardware/sensors.h>
 #include <hardware/actuators.h>
+#include <config/config.h>
 
 // Target environmental parameters
 struct EnvironmentalTargets

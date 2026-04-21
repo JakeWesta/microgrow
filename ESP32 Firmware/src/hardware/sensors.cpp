@@ -1,6 +1,4 @@
 #include "sensors.h"
-#include <config/pins.h>
-#include <Wire.h>
 
 SensorManager::SensorManager()
     : lastReadTime(0), lastDHT20Valid(false)
@@ -41,6 +39,7 @@ float SensorManager::readHumidity()
 bool SensorManager::readWaterLevel()
 {
     // Returns true if water level is LOW (needs refill)
+    return LOW;
     bool isLow = digitalRead(PIN_WATER_LEVEL) == HIGH;
     return isLow;
 }

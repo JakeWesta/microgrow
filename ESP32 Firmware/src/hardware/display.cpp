@@ -1,8 +1,4 @@
 #include "display.h"
-#include "../config/pins.h"
-#include "../config/config.h"
-#include <qrcode.h>
-#include <SPI.h>
 
 //  Color Palette
 #define COLOR_BG ILI9341_BLACK
@@ -35,13 +31,20 @@ DisplayManager::DisplayManager()
 
 bool DisplayManager::begin()
 {
-    SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI, TFT_CS);
-    SD.begin(SD_CS, SD_SCK_MHZ(12));
-    delay(10);
+    SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
+
     tft.begin();
-    delay(10);
     tft.setRotation(TFT_ROTATION);
     clear();
+
+    if (!SD.begin(SD_CS, SD_SCK_MHZ(4)))
+        Serial.printf("SD init failed 0x%x\n", SD.sdErrorCode());
+    else
+        Serial.println("SD success");
+
+    Serial.println("Display initialized");
+    Serial.printf("Display ID: 0x%X\n", tft.readcommand8(ILI9341_RDID1));
+    Serial.printf("Display Status: 0x%X\n", tft.readcommand8(ILI9341_RDMODE));
     return true;
 }
 
@@ -176,6 +179,7 @@ void DisplayManager::showWiFiSetup(const String &deviceId, WiFiSetupReason reaso
 
 void DisplayManager::_renderWiFiSetup()
 {
+    yield();
     clear();
     drawStatusBar();
 
@@ -193,7 +197,7 @@ void DisplayManager::_renderWiFiSetup()
 
     if (state == DisplayState::WIFI_SETUP_FRESH ||
         state == DisplayState::WIFI_SETUP_NO_CFG ||
-        state == DisplayState::WIFI_SETUP_PORTAL_CFG) // <-- Added this state
+        state == DisplayState::WIFI_SETUP_PORTAL_CFG)
     {
         // Show hotspot SSID to connect to
         drawCenteredText("Connect to:", 68, 2, COLOR_GRAY);
@@ -239,8 +243,7 @@ void DisplayManager::_renderWiFiSetup()
     }
     else if (state == DisplayState::WIFI_SETUP_PORTAL_CFG)
     {
-        drawCenteredText("Device already configured.", 190, 2, COLOR_GRAY);
-        drawCenteredText("Update WiFi if needed.", 212, 2, COLOR_GRAY);
+        drawCenteredText("Device already configured.", 200, 2, COLOR_GRAY);
     }
     else if (state == DisplayState::WIFI_SETUP_NO_CFG)
     {
@@ -342,36 +345,6 @@ void DisplayManager::showError(const String &message)
     drawCenteredText("! ERROR !", 50, 4, COLOR_ERROR);
     tft.fillRect(0, 96, TFT_WIDTH, 4, COLOR_ERROR);
     drawCenteredText(message, 120, 2, COLOR_WHITE);
-}
-
-// ============================================================================
-// QR code screen
-// ============================================================================
-
-void DisplayManager::showQRCode(const String &data)
-{
-    clear();
-
-    QRCode qrcode;
-    uint8_t qrcodeData[qrcode_getBufferSize(3)];
-    qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, data.c_str());
-
-    int scale = 6;
-    int qrPixelSize = qrcode.size * scale;
-    int offsetX = (TFT_WIDTH - qrPixelSize) / 2;
-    int offsetY = 50;
-
-    drawCenteredText("Scan to Register", 12, 2, COLOR_CYAN);
-
-    tft.fillRect(offsetX - 6, offsetY - 6, qrPixelSize + 12, qrPixelSize + 12, COLOR_WHITE);
-    tft.drawRect(offsetX - 7, offsetY - 7, qrPixelSize + 14, qrPixelSize + 14, COLOR_ACCENT);
-
-    for (uint8_t y = 0; y < qrcode.size; y++)
-        for (uint8_t x = 0; x < qrcode.size; x++)
-        {
-            uint16_t color = qrcode_getModule(&qrcode, x, y) ? COLOR_BLACK : COLOR_WHITE;
-            tft.fillRect(offsetX + (x * scale), offsetY + (y * scale), scale, scale, color);
-        }
 }
 
 // ============================================================================

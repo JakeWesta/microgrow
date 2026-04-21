@@ -1,6 +1,4 @@
 #include "actuators.h"
-#include <config/pins.h>
-#include <config/config.h>
 
 // ============================================================================
 // Fan
@@ -126,6 +124,7 @@ void LEDStrip::on()
 
 void LEDStrip::setColor(uint8_t r, uint8_t g, uint8_t b)
 {
+    Serial.printf("LEDs: (%d, %d, %d)\n", r, g, b);
     setColor(CRGB(r, g, b));
 }
 
@@ -183,7 +182,7 @@ void LEDStrip::flash(CRGB color)
 // ============================================================================
 
 ActuatorManager::ActuatorManager()
-    : fan(PIN_FAN), pump(PIN_WATER_PUMP), mister(PIN_MISTER), leds(PIN_LED_STRIP, NUM_LEDS)
+    : fan(PIN_FAN), pump1(PIN_WATER_PUMP1), pump2(PIN_WATER_PUMP2), mister(PIN_MISTER), leds(PIN_LED_STRIP, NUM_LEDS)
 {
 }
 
@@ -196,7 +195,8 @@ bool ActuatorManager::begin()
 void ActuatorManager::allOff()
 {
     fan.off();
-    pump.off();
+    pump1.off();
+    pump2.off();
     mister.off();
     leds.off();
     Serial.println("All actuators turned OFF");

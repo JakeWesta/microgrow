@@ -1,8 +1,4 @@
 #include "mqtt_client.h"
-#include <config/config.h>
-#include <control/automation.h>
-#include <control/scheduler.h>
-#include <hardware/actuators.h>
 
 MQTTClient *MQTTClient::instance = nullptr;
 
@@ -143,12 +139,12 @@ bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow, CR
   return ok;
 }
 
-bool MQTTClient::publishStatus(const String &message)
+bool MQTTClient::publishPulse(const String &message)
 {
   if (!isConnected())
     return false;
 
-  String topic = "microgrow/" + deviceId + "/status";
+  String topic = "microgrow/" + deviceId + "/pulse";
   return client.publish(topic.c_str(), message.c_str());
 }
 
@@ -298,16 +294,18 @@ void MQTTClient::handleInit(JsonDocument &doc)
   client.unsubscribe(("microgrow/" + deviceId + "/init").c_str());
   subscribeToHabitatTopics();
 
-  publishStatus("configured");
+  publishPulse("configured");
   Serial.println("Init complete");
 }
 
 // Pump pulse task (file-local, cancellable)
 struct PumpPulseContext
 {
-  WaterPump *pump;
+  WaterPump *pump1;
+  WaterPump *pump2;
   Scheduler *scheduler;
   uint32_t durationMs;
+  MQTTClient *mqtt;
 };
 
 static TaskHandle_t pumpPulseHandle = NULL;
@@ -317,18 +315,24 @@ static void pumpPulseTask(void *param)
 {
   PumpPulseContext *ctx = static_cast<PumpPulseContext *>(param);
 
-  WaterPump *pump = ctx->pump;
+  WaterPump *pump1 = ctx->pump1;
+  WaterPump *pump2 = ctx->pump2;
   Scheduler *scheduler = ctx->scheduler;
   uint32_t durationMs = ctx->durationMs;
+  MQTTClient *mqtt = ctx->mqtt;
+  delete ctx;
 
-  pump->on();
+  mqtt->publishPulse("pulse:" + String(durationMs / 1000));
 
-  // Sleep for duration (will be interrupted if task is deleted)
+  pump1->on();
+  pump2->on();
+
   vTaskDelay(pdMS_TO_TICKS(durationMs));
 
-  // Normal completion path
-  pump->off();
-  pump->setManualOverride(false);
+  pump1->off();
+  pump2->off();
+  pump1->setManualOverride(false);
+  pump2->setManualOverride(false);
 
   if (scheduler)
     scheduler->getWaterSchedule().resume();
@@ -336,7 +340,6 @@ static void pumpPulseTask(void *param)
   pumpPulseActive = false;
   pumpPulseHandle = NULL;
 
-  delete ctx;
   vTaskDelete(NULL);
 }
 
@@ -379,7 +382,8 @@ void MQTTClient::handleOverride(JsonDocument &doc)
 
   case ActuatorId::WATER_PUMP:
   {
-    WaterPump &pump = actuators->getPump();
+    WaterPump &pump1 = actuators->getPump1();
+    WaterPump &pump2 = actuators->getPump2();
 
     if (en)
     {
@@ -389,7 +393,7 @@ void MQTTClient::handleOverride(JsonDocument &doc)
         break;
       }
 
-      pump.setManualOverride(true);
+      pump1.setManualOverride(true);
 
       uint32_t durationMs = 0;
       if (scheduler)
@@ -400,9 +404,11 @@ void MQTTClient::handleOverride(JsonDocument &doc)
       }
 
       PumpPulseContext *ctx = new PumpPulseContext{
-          &pump,
+          &pump1,
+          &pump2,
           scheduler,
-          durationMs};
+          durationMs,
+          this};
 
       BaseType_t ok = xTaskCreatePinnedToCore(
           pumpPulseTask,
@@ -421,7 +427,8 @@ void MQTTClient::handleOverride(JsonDocument &doc)
       {
         Serial.println("Failed to create pump pulse task");
         delete ctx;
-        pump.setManualOverride(false);
+        pump1.setManualOverride(false);
+        pump2.setManualOverride(false);
       }
     }
     else
@@ -433,8 +440,10 @@ void MQTTClient::handleOverride(JsonDocument &doc)
         pumpPulseHandle = NULL;
       }
 
-      pump.off();
-      pump.setManualOverride(false);
+      pump1.off();
+      pump2.off();
+      pump1.setManualOverride(false);
+      pump2.setManualOverride(false);
 
       if (scheduler)
         scheduler->getWaterSchedule().resume();
@@ -530,8 +539,8 @@ void MQTTClient::handleRefresh(JsonDocument &doc)
 /*
  * /growth - update the plant growth stage.
  *
- * Expected JSON example: { "growthStage": <1|2> }
- *  1 = sapling, 2 = grown
+ * Expected JSON example: { "growthStage": <1|2|3> }
+ *  1 = sapling, 2 = grown, 3 = flowering
  */
 void MQTTClient::handleGrowth(JsonDocument &doc)
 {
@@ -541,6 +550,13 @@ void MQTTClient::handleGrowth(JsonDocument &doc)
     growth = "sapling";
   else if (g == 2)
     growth = "grown";
+  else if (g == 3)
+    growth = "flowering";
+  else
+  {
+    Serial.println("Growth: invalid or missing 'growthStage' field");
+    return;
+  }
 
   Serial.printf("Growth: stage %d -> %s\n", g, growth.c_str());
 
@@ -588,7 +604,7 @@ void MQTTClient::handleDelete()
  */
 void MQTTClient::handleBlackout(JsonDocument &doc)
 {
-  if (!doc["blackout"].is<bool>() && !doc["blackout"].is<int>())
+  if (!doc["blackout"].is<bool>())
   {
     Serial.println("Blackout: missing 'blackout' field");
     return;
@@ -603,6 +619,10 @@ void MQTTClient::handleBlackout(JsonDocument &doc)
       scheduler->getLightSchedule().pause();
     else
       scheduler->getLightSchedule().resume();
+  }
+  else
+  {
+    Serial.println("Blackout: scheduler not available");
   }
 
   if (callbacks.onBlackout)

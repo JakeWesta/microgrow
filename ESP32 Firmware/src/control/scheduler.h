@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 #include <functional>
+#include <config/config.h>
+#include <time.h>
 
 // Schedule event handler type
 using ScheduleCallback = std::function<void()>;

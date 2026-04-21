@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 #include <FastLED.h>
+#include <config/pins.h>
+#include <config/config.h>
 
 // Base actuator class
 class Actuator
@@ -105,7 +107,8 @@ public:
 
     // Access individual actuators
     Fan &getFan() { return fan; }
-    WaterPump &getPump() { return pump; }
+    WaterPump &getPump1() { return pump1; }
+    WaterPump &getPump2() { return pump2; }
     Mister &getMister() { return mister; }
     LEDStrip &getLEDs() { return leds; }
 
@@ -114,7 +117,8 @@ public:
 
 private:
     Fan fan;
-    WaterPump pump;
+    WaterPump pump1;
+    WaterPump pump2;
     Mister mister;
     LEDStrip leds;
 };

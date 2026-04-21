@@ -9,7 +9,8 @@
 #define NUM_LEDS 256
 
 // Actuators
-#define PIN_WATER_PUMP 32
+#define PIN_WATER_PUMP1 32
+#define PIN_WATER_PUMP2 33
 #define PIN_FAN 26
 #define PIN_MISTER 27
 

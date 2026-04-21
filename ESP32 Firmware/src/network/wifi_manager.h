@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <functional>
+#include <config/config.h>
 
 class EspWiFiManager
 {
@@ -27,7 +28,7 @@ public:
     bool disconnect();
 
     // Device identification
-    String getDeviceId() const { return deviceId; }
+    String getDeviceId() const { return "1"; }
     String getMacAddress() const;
     String getIPAddress() const;
 

@@ -1,5 +1,4 @@
 #include "wifi_manager.h"
-#include <config/config.h>
 
 EspWiFiManager::EspWiFiManager()
     : configured(false), lastReconnectAttempt(0)

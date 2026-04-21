@@ -3,8 +3,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
 #include <Adafruit_ImageReader.h>
-#include <SD.h>
-#include "../config/pins.h"
+#include <Sd.h>
+#include <config/pins.h>
+#include <config/config.h>
 
 // Why the WiFi setup screen is being shown - drives which variant renders
 enum class WiFiSetupReason
@@ -44,7 +45,6 @@ public:
 
     void showSensorData(float temp, float humidity, bool waterLow);
     void showError(const String &message);
-    void showQRCode(const String &data);
     void showShutdown();
 
     // Image / animation

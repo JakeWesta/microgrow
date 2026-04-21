@@ -8,6 +8,10 @@
 #include <functional>
 #include <hardware/display.h>
 #include <storage/persistence.h>
+#include <config/config.h>
+#include <control/automation.h>
+#include <control/scheduler.h>
+#include <hardware/actuators.h>
 
 // Forward declarations
 class ActuatorManager;
@@ -65,7 +69,7 @@ public:
 
     // Publishing
     bool publishSensorData(float temp, float humidity, bool waterLow, CRGB color);
-    bool publishStatus(const String &message);
+    bool publishPulse(const String &message);
 
     // Configuration state
     bool isInitialized() const { return initState == InitState::COMPLETE; }

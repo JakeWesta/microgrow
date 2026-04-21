@@ -69,7 +69,6 @@ static void applyConfig(const DeviceConfig &config)
         Timing(config.lightStartSec, config.lightDurationSec, config.lightIntervalSec));
     scheduler->getWaterSchedule().setTiming(
         Timing(config.waterStartSec, config.waterDurationSec, config.waterIntervalSec));
-
     display->setGreenType(config.greenType);
     display->setGrowth(config.growth);
 
@@ -118,15 +117,9 @@ static void performShutdown()
 
     // 5. Clean network disconnect
     if (mqttClient && mqttClient->isConnected())
-    {
-        mqttClient->publishStatus("offline");
         mqttClient->disconnect();
-    }
     if (wifiMgr && wifiMgr->isConnected())
-    {
         WiFi.disconnect(true);
-        Serial.println("WiFi disconnected");
-    }
 
     // 6. Shutdown screen + solid red LEDs
     if (display)
@@ -194,13 +187,23 @@ void setup()
     MQTTCallbacks cbs;
     cbs.onConfig = [](const DeviceConfig &cfg)
     {
+        actuators->getLEDs().flash(CRGB::Green);
         storage->saveConfig(cfg);
+        display->setGreenType(cfg.greenType);
+        display->setGrowth(cfg.growth);
         applyConfig(cfg);
     };
     cbs.onGrowth = [](const String &growth)
     {
+        if (growth == "flowering")
+        {
+            scheduler->getLightSchedule().disable();
+            scheduler->getWaterSchedule().disable();
+            actuators->getLEDs().setColor(CRGB::Purple);
+        }
         DeviceConfig cfg = storage->loadConfig();
         cfg.growth = growth;
+        display->setGrowth(growth);
         storage->saveConfig(cfg);
     };
     cbs.onBlackout = [](bool blackout)
@@ -228,9 +231,16 @@ void setup()
 
     scheduler->getWaterSchedule().setCallbacks(
         [=]()
-        { actuators->getPump().on(); },
+        {
+            mqttClient->publishPulse("watering_on");
+            actuators->getPump1().on();
+            actuators->getPump2().on();
+        },
         [=]()
-        { actuators->getPump().off(); });
+        {
+            actuators->getPump1().off();
+            actuators->getPump2().off();
+        });
 
     scheduler->getLightSchedule().setCallbacks(
         [=]()
@@ -259,6 +269,7 @@ void setup()
             while (true)
                 vTaskDelay(portMAX_DELAY);
         }
+        actuators->getLEDs().flash(CRGB::Yellow);
     }
     else if (!isConfigured)
     {
@@ -277,9 +288,6 @@ void setup()
     mqttClient->begin(isConfigured, config.greenType, config.growth);
     yield();
 
-    // Flash LEDs teal on successful WiFi/MQTT setup
-    actuators->getLEDs().flash(CRGB::Teal);
-
     // Start FreeRTOS tasks
     Serial.println("11. Creating FreeRTOS tasks...");
     xTaskCreatePinnedToCore(sensorTask, "Sensor", 8192, NULL, 1, NULL, 1);
@@ -287,8 +295,6 @@ void setup()
     xTaskCreatePinnedToCore(scheduleTask, "Schedule", 8192, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(networkTask, "Network", 8192, NULL, 2, NULL, 1);
 
-    // Flash LEDs green when setup is complete
-    actuators->getLEDs().flash(CRGB::Green);
     Serial.println("\n=== MicroGrow Ready ===\n");
 }
 

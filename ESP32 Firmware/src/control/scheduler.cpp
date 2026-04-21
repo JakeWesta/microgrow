@@ -1,6 +1,4 @@
 #include "scheduler.h"
-#include <config/config.h>
-#include <time.h>
 
 // ============================================================================
 // Schedule Implementation
