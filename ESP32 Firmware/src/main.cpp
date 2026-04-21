@@ -195,7 +195,7 @@ void setup()
     };
     cbs.onGrowth = [](const String &growth)
     {
-        if (growth == "flowering")
+        if (growth == "harvest")
         {
             scheduler->getLightSchedule().disable();
             scheduler->getWaterSchedule().disable();
@@ -225,7 +225,7 @@ void setup()
     if (isConfigured)
         applyConfig(config);
     else
-        config.growth = "seed";
+        config.growth = "seedling";
 
     mqttClient->begin(isConfigured, config.greenType, config.growth);
 
@@ -417,50 +417,33 @@ void networkTask(void *param)
 {
     TickType_t lastWakeTime = xTaskGetTickCount();
     TickType_t lastPublish = 0;
-    TickType_t lastMqttReconnect = 0;
     time_t lastReading = 0;
 
     configTime(TIMEZONE_OFFSET_S, DST_OFFSET_S, NTP_SERVER_1, NTP_SERVER_2);
 
     while (true)
     {
-        if (shutdownComplete)
-            vTaskSuspend(nullptr);
-
         if (!wifiMgr->isConnected())
         {
-            if (resetWiFiRequested)
-            {
-                vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(100));
-                continue;
-            }
-
             display->setWiFiStatus(false);
-            display->setMQTTStatus(false);
             Serial.println("WiFi disconnected, attempting reconnect...");
-            actuators->getLEDs().flash(CRGB::Orange4);
             wifiMgr->reconnect();
         }
         else
         {
             display->setWiFiStatus(true);
+        }
 
+        if (wifiMgr->isConnected())
+        {
             if (!mqttClient->isConnected())
             {
                 display->setMQTTStatus(false);
-
-                TickType_t now = xTaskGetTickCount();
-                if (now - lastMqttReconnect > pdMS_TO_TICKS(MQTT_RECONNECT_DELAY_MS))
-                {
-                    lastMqttReconnect = now;
-                    Serial.println("MQTT disconnected, attempting reconnect...");
-                    mqttClient->connect();
-                }
+                mqttClient->connect();
             }
             else
             {
                 display->setMQTTStatus(true);
-                lastMqttReconnect = 0;
                 mqttClient->loop();
 
                 if (mqttClient->isInitialized())

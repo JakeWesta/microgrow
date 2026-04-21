@@ -2,8 +2,6 @@
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
-#include <Adafruit_ImageReader.h>
-#include <Sd.h>
 #include <config/pins.h>
 #include <config/config.h>
 
@@ -47,13 +45,9 @@ public:
     void showError(const String &message);
     void showShutdown();
 
-    // Image / animation
+    // Plant illustration
     void setGreenType(const String &gt) { greenType = gt; }
     void setGrowth(const String &g) { growth = g; }
-    String getFilename() const
-    {
-        return "/" + greenType + "-" + growth + "-" + String(animation_step) + ".bmp";
-    }
 
     // Status bar updates - ONLY redraws the status bar, never changes screen
     void setWiFiStatus(bool connected);
@@ -61,16 +55,8 @@ public:
 
     DisplayState getState() const { return state; }
 
-    void drawImage(const String &filename, int x, int y);
-
 private:
     Adafruit_ILI9341 tft{TFT_CS, TFT_DC, TFT_RST};
-    Adafruit_ImageReader reader;
-    SdFat SD;
-    uint8_t animation_step;
-    uint32_t last_animation_ms;
-    static constexpr uint32_t ANIMATION_FRAME_MS = 500;
-    static constexpr uint8_t ANIMATION_FRAMES = 1;
 
     DisplayState state;
     bool wifiConnected;
@@ -81,6 +67,7 @@ private:
     String _deviceId;
     String greenType;
     String growth;
+    String lastGrowth; // tracks last drawn stage so we redraw on change
 
     // Drawing helpers
     void drawCenteredText(const String &text, int y, uint8_t size, uint16_t color);
@@ -88,4 +75,11 @@ private:
     void drawStatusBar();
     void drawPageHeader(const String &title, uint16_t color);
     void _renderWiFiSetup();
+
+    // Plant illustration – one method per stage (0–3)
+    void drawPlant(int cx, int baseY);
+    void drawPlantSeedling(int cx, int baseY);   // 0
+    void drawPlantVegetative(int cx, int baseY); // 1
+    void drawPlantFlowering(int cx, int baseY);  // 2
+    void drawPlantHarvest(int cx, int baseY);    // 3
 };

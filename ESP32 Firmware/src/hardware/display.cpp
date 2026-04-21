@@ -1,6 +1,8 @@
 #include "display.h"
 
+// ============================================================================
 //  Color Palette
+// ============================================================================
 #define COLOR_BG ILI9341_BLACK
 #define COLOR_SURFACE 0x1863
 #define COLOR_ACCENT 0x07E0
@@ -14,7 +16,23 @@
 #define COLOR_GRAY 0xC618
 #define COLOR_DARK_GRAY 0x4208
 
+// Plant palette
+#define COLOR_SOIL 0x4A28       // dark brown
+#define COLOR_STEM 0x2D00       // medium green
+#define COLOR_LEAF 0x0600       // bright green
+#define COLOR_LEAF_DARK 0x0400  // dark green
+#define COLOR_SEED_SHELL 0xC600 // tan/brown
+#define COLOR_PETAL 0xF81F      // magenta/pink
+#define COLOR_PETAL2 0xFD20     // orange
+#define COLOR_STAMEN 0xFFE0     // yellow
+#define COLOR_BERRY 0xF800      // red
+#define COLOR_POT 0xC300        // terracotta
+
 #define STATUS_H 26
+
+// ============================================================================
+//  Constructor
+// ============================================================================
 
 DisplayManager::DisplayManager()
     : state(DisplayState::BOOT),
@@ -23,28 +41,20 @@ DisplayManager::DisplayManager()
       _deviceId(""),
       greenType(""),
       growth(""),
-      reader(SD),
-      animation_step(0),
-      last_animation_ms(0)
+      lastGrowth("")
 {
 }
+
+// ============================================================================
+//  Init
+// ============================================================================
 
 bool DisplayManager::begin()
 {
     SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
-
     tft.begin();
     tft.setRotation(TFT_ROTATION);
     clear();
-
-    if (!SD.begin(SD_CS, SD_SCK_MHZ(4)))
-        Serial.printf("SD init failed 0x%x\n", SD.sdErrorCode());
-    else
-        Serial.println("SD success");
-
-    Serial.println("Display initialized");
-    Serial.printf("Display ID: 0x%X\n", tft.readcommand8(ILI9341_RDID1));
-    Serial.printf("Display Status: 0x%X\n", tft.readcommand8(ILI9341_RDMODE));
     return true;
 }
 
@@ -54,6 +64,7 @@ void DisplayManager::clear()
     yield();
 }
 
+// Clear only the plant/image area below the sensor strip
 void DisplayManager::clearImg()
 {
     tft.fillRect(0, 87, TFT_WIDTH, TFT_HEIGHT - 87, COLOR_BG);
@@ -66,7 +77,7 @@ void DisplayManager::setBrightness(uint8_t level)
 }
 
 // ============================================================================
-// Text helpers
+//  Text helpers
 // ============================================================================
 
 static uint16_t measureTextWidth(const String &text, uint8_t size)
@@ -99,7 +110,7 @@ void DisplayManager::drawRightText(const String &text, int y, uint8_t size, uint
 }
 
 // ============================================================================
-// Status bar
+//  Status bar
 // ============================================================================
 
 void DisplayManager::drawStatusBar()
@@ -130,7 +141,7 @@ void DisplayManager::drawPageHeader(const String &title, uint16_t color)
 }
 
 // ============================================================================
-// Boot screen
+//  Boot screen
 // ============================================================================
 
 void DisplayManager::showBoot()
@@ -144,14 +155,7 @@ void DisplayManager::showBoot()
 }
 
 // ============================================================================
-// WiFi setup screen
-//
-// Renders differently based on current DisplayState:
-//
-//   WIFI_SETUP_FRESH   - no WiFi, no config: "Connect to hotspot, open app"
-//   WIFI_SETUP_NO_CFG  - WiFi connected, no config: "WiFi OK, awaiting config"
-//   WIFI_SETUP_NO_WIFI - config exists, no WiFi: "Reconnecting..."
-//  WIFI_SETUP_PORTAL_CFG - user requested portal, config exists: "Previously configured, waiting for WiFi"
+//  WiFi setup screen
 // ============================================================================
 
 void DisplayManager::showWiFiSetup(const String &deviceId, WiFiSetupReason reason)
@@ -183,23 +187,17 @@ void DisplayManager::_renderWiFiSetup()
     clear();
     drawStatusBar();
 
-    //  Shared: header + device ID box
-
     if (state == DisplayState::WIFI_SETUP_NO_WIFI)
-    {
         drawCenteredText("Reconnecting...", 32, 3, COLOR_ACCENT);
-    }
     else
-    {
         drawCenteredText("Device Setup", 32, 3, COLOR_ACCENT);
-    }
+
     tft.drawFastHLine(10, 60, TFT_WIDTH - 20, COLOR_ACCENT_DIM);
 
     if (state == DisplayState::WIFI_SETUP_FRESH ||
         state == DisplayState::WIFI_SETUP_NO_CFG ||
         state == DisplayState::WIFI_SETUP_PORTAL_CFG)
     {
-        // Show hotspot SSID to connect to
         drawCenteredText("Connect to:", 68, 2, COLOR_GRAY);
         drawCenteredText("MicroGrow Setup", 90, 2, COLOR_CYAN);
         tft.drawFastHLine(10, 118, TFT_WIDTH - 20, COLOR_DARK_GRAY);
@@ -218,7 +216,6 @@ void DisplayManager::_renderWiFiSetup()
     }
     else // WIFI_SETUP_NO_WIFI
     {
-        // Show device ID higher up since there's no hotspot instruction
         drawCenteredText("Device ID", 74, 2, COLOR_GRAY);
 
         uint16_t idW = measureTextWidth(_deviceId, 3);
@@ -233,11 +230,8 @@ void DisplayManager::_renderWiFiSetup()
         tft.drawFastHLine(10, 132, TFT_WIDTH - 20, COLOR_DARK_GRAY);
     }
 
-    //  Bottom status line – differs per reason
-
     if (state == DisplayState::WIFI_SETUP_FRESH)
     {
-        // Not connected, no config - instruct user to connect and open app
         drawCenteredText("Open app to configure", 190, 2, COLOR_GRAY);
         drawCenteredText("after connecting", 212, 2, COLOR_GRAY);
     }
@@ -247,41 +241,41 @@ void DisplayManager::_renderWiFiSetup()
     }
     else if (state == DisplayState::WIFI_SETUP_NO_CFG)
     {
-        // WiFi connected, waiting for MQTT to deliver config
         tft.fillRect(10, 188, TFT_WIDTH - 20, 28, COLOR_SURFACE);
         tft.drawRect(10, 188, TFT_WIDTH - 20, 28, COLOR_GREEN_OK);
         drawCenteredText("WiFi OK - Awaiting cfg", 194, 2, COLOR_GREEN_OK);
     }
     else // WIFI_SETUP_NO_WIFI
     {
-        // Config exists but WiFi is down
         drawCenteredText("Previously configured.", 144, 2, COLOR_GRAY);
         drawCenteredText("Waiting for WiFi...", 166, 2, COLOR_GRAY);
     }
 }
 
 // ============================================================================
-// Running / sensor screen
+//  Running / sensor screen
 // ============================================================================
 
 void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
 {
-    if (state != DisplayState::RUNNING)
-    {
-        clear();
-        drawStatusBar();
-    }
-
+    bool firstRender = (state != DisplayState::RUNNING);
     state = DisplayState::RUNNING;
     lastTemp = temp;
     lastHumidity = humidity;
     lastWaterLow = waterLow;
+
+    if (firstRender)
+    {
+        clear();
+        drawStatusBar();
+    }
 
     drawStatusBar();
 
     const int SENSOR_Y = STATUS_H + 15;
     const int DIVIDER_Y = STATUS_H + 15 + 40 + 4;
 
+    // Redraw sensor strip
     tft.fillRect(0, STATUS_H + 1, TFT_WIDTH, DIVIDER_Y - STATUS_H + 2, COLOR_BG);
     yield();
 
@@ -300,21 +294,25 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     tft.fillRect(0, DIVIDER_Y, TFT_WIDTH, 2, COLOR_ACCENT_DIM);
 
     const int imgY = DIVIDER_Y + 2;
-    uint32_t now = millis();
-    if (now - last_animation_ms >= ANIMATION_FRAME_MS)
+    const int plantH = TFT_HEIGHT - imgY;
+    const int cx = TFT_WIDTH / 2;
+    const int baseY = imgY + plantH - 80;
+
+    // Redraw plant area on first render or whenever growth stage changes
+    bool growthChanged = (growth != lastGrowth);
+    if (firstRender || growthChanged)
     {
-        animation_step = (animation_step + 1) % ANIMATION_FRAMES;
-        last_animation_ms = now;
-        int imgWidth = 0, imgHeight = 0;
-        String filename = getFilename();
-        reader.bmpDimensions(filename.c_str(), &imgWidth, &imgHeight);
-        int imgX = (TFT_WIDTH - imgWidth) / 2;
-        drawImage(filename.c_str(), imgX, imgY);
+        tft.fillRect(0, imgY, TFT_WIDTH, plantH, COLOR_BG);
+        if (growth.length() > 0)
+        {
+            drawPlant(cx, baseY);
+            lastGrowth = growth;
+        }
     }
 }
 
 // ============================================================================
-// Shutdown screen
+//  Shutdown screen
 // ============================================================================
 
 void DisplayManager::showShutdown()
@@ -332,7 +330,7 @@ void DisplayManager::showShutdown()
 }
 
 // ============================================================================
-// Error screen
+//  Error screen
 // ============================================================================
 
 void DisplayManager::showError(const String &message)
@@ -348,14 +346,13 @@ void DisplayManager::showError(const String &message)
 }
 
 // ============================================================================
-// Status bar updates
+//  Status bar updates
 // ============================================================================
 
 void DisplayManager::setWiFiStatus(bool connected)
 {
     if (state == DisplayState::SHUTDOWN)
         return;
-
     if (wifiConnected != connected)
     {
         wifiConnected = connected;
@@ -367,7 +364,6 @@ void DisplayManager::setMQTTStatus(bool connected)
 {
     if (state == DisplayState::SHUTDOWN)
         return;
-
     if (mqttConnected != connected)
     {
         mqttConnected = connected;
@@ -376,10 +372,172 @@ void DisplayManager::setMQTTStatus(bool connected)
 }
 
 // ============================================================================
-// Image helper
+//  Plant drawing – dispatcher
 // ============================================================================
 
-void DisplayManager::drawImage(const String &filename, int x, int y)
+void DisplayManager::drawPlant(int cx, int baseY)
 {
-    reader.drawBMP(filename.c_str(), tft, x, y);
+    Serial.printf("Drawing plant at growth stage '%s'\n", growth.c_str());
+    if (growth == "seedling")
+        drawPlantSeedling(cx, baseY);
+    else if (growth == "vegetative")
+        drawPlantVegetative(cx, baseY);
+    else if (growth == "flowering")
+        drawPlantFlowering(cx, baseY);
+    else if (growth == "harvest")
+        drawPlantHarvest(cx, baseY);
+    else
+        drawPlantSeedling(cx, baseY); // fallback
+}
+
+// ============================================================================
+//  Stage 0 – SEEDLING
+//  Soil mound with a cracked seed and two small cotyledons just emerging.
+// ============================================================================
+void DisplayManager::drawPlantSeedling(int cx, int baseY)
+{
+    // Soil mound
+    tft.fillEllipse(cx, baseY - 8, 48, 16, COLOR_SOIL);
+
+    // Stem (short)
+    tft.drawLine(cx, baseY - 16, cx, baseY - 46, COLOR_STEM);
+    tft.drawLine(cx + 1, baseY - 16, cx + 1, baseY - 46, COLOR_STEM);
+
+    // Left cotyledon
+    tft.fillEllipse(cx - 16, baseY - 47, 15, 8, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 44, cx - 16, baseY - 47, COLOR_LEAF_DARK);
+
+    // Right cotyledon
+    tft.fillEllipse(cx + 16, baseY - 47, 15, 8, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 44, cx + 16, baseY - 47, COLOR_LEAF_DARK);
+
+    // Apical bud
+    tft.fillCircle(cx, baseY - 54, 5, COLOR_LEAF);
+
+    // Cracked seed shell visible at soil surface
+    tft.fillEllipse(cx - 4, baseY - 14, 7, 5, COLOR_SEED_SHELL);
+    tft.fillEllipse(cx + 6, baseY - 13, 6, 4, COLOR_SEED_SHELL);
+
+    drawCenteredText("Seedling", baseY - 76, 2, COLOR_GRAY);
+}
+
+// ============================================================================
+//  Stage 1 – VEGETATIVE
+//  Taller stem with alternating leaves.
+// ============================================================================
+void DisplayManager::drawPlantVegetative(int cx, int baseY)
+{
+    // Pot body (trapezoid approximation with rects + triangles via lines)
+    tft.fillRect(cx - 22, baseY - 26, 44, 24, COLOR_POT);
+    tft.fillTriangle(cx - 22, baseY - 26, cx - 30, baseY - 2, cx - 22, baseY - 2, COLOR_POT);
+    tft.fillTriangle(cx + 22, baseY - 26, cx + 30, baseY - 2, cx + 22, baseY - 2, COLOR_POT);
+    // Pot rim
+    tft.fillRect(cx - 28, baseY - 30, 56, 6, COLOR_GRAY);
+    // Soil in pot
+    tft.fillEllipse(cx, baseY - 28, 22, 6, COLOR_SOIL);
+
+    // Main stem
+    int stemTop = baseY - 100;
+    for (int i = 0; i < 2; i++)
+        tft.drawLine(cx + i, baseY - 28, cx + i, stemTop, COLOR_STEM);
+
+    // Leaf pair 1 (low)
+    tft.fillEllipse(cx - 22, baseY - 60, 20, 9, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 58, cx - 22, baseY - 60, COLOR_LEAF_DARK);
+    tft.fillEllipse(cx + 22, baseY - 70, 20, 9, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 68, cx + 22, baseY - 70, COLOR_LEAF_DARK);
+
+    // Leaf pair 2 (mid)
+    tft.fillEllipse(cx - 20, baseY - 88, 18, 8, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 86, cx - 20, baseY - 88, COLOR_LEAF_DARK);
+    tft.fillEllipse(cx + 20, baseY - 96, 18, 8, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 94, cx + 20, baseY - 96, COLOR_LEAF_DARK);
+
+    // Apical bud
+    tft.fillCircle(cx, stemTop - 4, 6, COLOR_LEAF);
+
+    drawCenteredText("Vegetative", baseY - 120, 2, COLOR_GRAY);
+}
+
+// ============================================================================
+//  Stage 2 – FLOWERING
+//  Full plant with flower at the top (4 petals + stamen).
+// ============================================================================
+void DisplayManager::drawPlantFlowering(int cx, int baseY)
+{
+    // Pot
+    tft.fillRect(cx - 22, baseY - 26, 44, 24, COLOR_POT);
+    tft.fillTriangle(cx - 22, baseY - 26, cx - 30, baseY - 2, cx - 22, baseY - 2, COLOR_POT);
+    tft.fillTriangle(cx + 22, baseY - 26, cx + 30, baseY - 2, cx + 22, baseY - 2, COLOR_POT);
+    tft.fillRect(cx - 28, baseY - 30, 56, 6, COLOR_GRAY);
+    tft.fillEllipse(cx, baseY - 28, 22, 6, COLOR_SOIL);
+
+    // Stem
+    int stemTop = baseY - 110;
+    for (int i = 0; i < 2; i++)
+        tft.drawLine(cx + i, baseY - 28, cx + i, stemTop, COLOR_STEM);
+
+    // Leaves
+    tft.fillEllipse(cx - 22, baseY - 60, 20, 9, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 58, cx - 22, baseY - 60, COLOR_LEAF_DARK);
+    tft.fillEllipse(cx + 22, baseY - 72, 20, 9, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 70, cx + 22, baseY - 72, COLOR_LEAF_DARK);
+    tft.fillEllipse(cx - 18, baseY - 90, 16, 7, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 88, cx - 18, baseY - 90, COLOR_LEAF_DARK);
+
+    // Flower – 4 petals (N/S/E/W ellipses)
+    int fx = cx, fy = stemTop - 14;
+    tft.fillEllipse(fx, fy - 14, 8, 14, COLOR_PETAL);  // top
+    tft.fillEllipse(fx, fy + 14, 8, 14, COLOR_PETAL);  // bottom
+    tft.fillEllipse(fx - 14, fy, 14, 8, COLOR_PETAL2); // left
+    tft.fillEllipse(fx + 14, fy, 14, 8, COLOR_PETAL2); // right
+    // Stamen centre
+    tft.fillCircle(fx, fy, 9, COLOR_STAMEN);
+    tft.fillCircle(fx, fy, 5, COLOR_BG); // hollow centre
+
+    drawCenteredText("Flowering", baseY - 130, 2, COLOR_GRAY);
+}
+
+// ============================================================================
+//  Stage 3 – HARVEST
+//  Plant with fruit/berries visible.
+// ============================================================================
+void DisplayManager::drawPlantHarvest(int cx, int baseY)
+{
+    // Pot
+    tft.fillRect(cx - 22, baseY - 26, 44, 24, COLOR_POT);
+    tft.fillTriangle(cx - 22, baseY - 26, cx - 30, baseY - 2, cx - 22, baseY - 2, COLOR_POT);
+    tft.fillTriangle(cx + 22, baseY - 26, cx + 30, baseY - 2, cx + 22, baseY - 2, COLOR_POT);
+    tft.fillRect(cx - 28, baseY - 30, 56, 6, COLOR_GRAY);
+    tft.fillEllipse(cx, baseY - 28, 22, 6, COLOR_SOIL);
+
+    // Stem (slightly shorter – heavy with fruit)
+    int stemTop = baseY - 106;
+    for (int i = 0; i < 2; i++)
+        tft.drawLine(cx + i, baseY - 28, cx + i, stemTop, COLOR_STEM);
+
+    // Leaves
+    tft.fillEllipse(cx - 24, baseY - 58, 22, 10, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 56, cx - 24, baseY - 58, COLOR_LEAF_DARK);
+    tft.fillEllipse(cx + 24, baseY - 70, 22, 10, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 68, cx + 24, baseY - 70, COLOR_LEAF_DARK);
+    tft.fillEllipse(cx - 18, baseY - 90, 16, 7, COLOR_LEAF);
+    tft.drawLine(cx, baseY - 88, cx - 18, baseY - 90, COLOR_LEAF_DARK);
+
+    // Canopy blob
+    tft.fillCircle(cx, stemTop - 4, 20, COLOR_LEAF_DARK);
+    tft.fillCircle(cx - 14, stemTop, 14, COLOR_LEAF);
+    tft.fillCircle(cx + 14, stemTop, 14, COLOR_LEAF);
+    tft.fillCircle(cx, stemTop - 16, 14, COLOR_LEAF);
+
+    // Berries / fruit
+    tft.fillCircle(cx - 10, stemTop - 4, 6, COLOR_BERRY);
+    tft.fillCircle(cx + 12, stemTop - 2, 6, COLOR_BERRY);
+    tft.fillCircle(cx, stemTop - 18, 5, COLOR_BERRY);
+    // Specular highlights
+    tft.fillCircle(cx - 12, stemTop - 6, 2, COLOR_WHITE);
+    tft.fillCircle(cx + 10, stemTop - 4, 2, COLOR_WHITE);
+    tft.fillCircle(cx - 2, stemTop - 20, 2, COLOR_WHITE);
+
+    drawCenteredText("Harvest!", baseY - 130, 2, COLOR_STAMEN);
 }

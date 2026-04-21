@@ -112,7 +112,8 @@ void MQTTClient::subscribeToHabitatTopics()
   client.subscribe((base + "growth").c_str());
   client.subscribe((base + "delete").c_str());
   client.subscribe((base + "blackout").c_str());
-  Serial.printf("Subscribed to habitat topics for %s\n", deviceId.c_str());
+  Serial.printf("Subscribed to habitat topics: %soverride, %srefresh, %sgrowth, %sdelete, %sblackout\n",
+                base.c_str(), base.c_str(), base.c_str(), base.c_str(), base.c_str());
 }
 
 // Publishing
@@ -124,18 +125,12 @@ bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow, CR
 
   String base = "microgrow/" + deviceId + "/";
 
-  JsonDocument colorDoc;
-  colorDoc["r"] = color.r;
-  colorDoc["g"] = color.g;
-  colorDoc["b"] = color.b;
-  String colorJson;
-  serializeJson(colorDoc, colorJson);
-
+  bool light = color.r > 0 || color.g > 0 || color.b > 0;
   bool ok = true;
   ok &= client.publish((base + "temp").c_str(), String(temp, 1).c_str());
   ok &= client.publish((base + "humidity").c_str(), String(humidity, 1).c_str());
   ok &= client.publish((base + "water").c_str(), String(waterLow ? 1 : 0).c_str());
-  ok &= client.publish((base + "light").c_str(), colorJson.c_str());
+  ok &= client.publish((base + "light").c_str(), light ? "100" : "0");
   return ok;
 }
 
@@ -322,7 +317,7 @@ static void pumpPulseTask(void *param)
   MQTTClient *mqtt = ctx->mqtt;
   delete ctx;
 
-  mqtt->publishPulse("pulse:" + String(durationMs / 1000));
+  mqtt->publishPulse("water_pulse");
 
   pump1->on();
   pump2->on();
@@ -540,18 +535,18 @@ void MQTTClient::handleRefresh(JsonDocument &doc)
  * /growth - update the plant growth stage.
  *
  * Expected JSON example: { "growthStage": <1|2|3> }
- *  1 = sapling, 2 = grown, 3 = flowering
+ *  1 = vegetative, 2 = flowering, 3 = harvest
  */
 void MQTTClient::handleGrowth(JsonDocument &doc)
 {
   int32_t g = doc["growthStage"].as<int32_t>();
 
   if (g == 1)
-    growth = "sapling";
+    growth = "vegetative";
   else if (g == 2)
-    growth = "grown";
-  else if (g == 3)
     growth = "flowering";
+  else if (g == 3)
+    growth = "harvest";
   else
   {
     Serial.println("Growth: invalid or missing 'growthStage' field");
@@ -561,10 +556,7 @@ void MQTTClient::handleGrowth(JsonDocument &doc)
   Serial.printf("Growth: stage %d -> %s\n", g, growth.c_str());
 
   if (display)
-  {
-    display->clearImg();
     display->setGrowth(growth);
-  }
 
   if (callbacks.onGrowth)
     callbacks.onGrowth(growth);

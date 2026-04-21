@@ -42,7 +42,7 @@ DeviceConfig PersistenceManager::loadConfig()
     }
 
     config.greenType = prefs.getString(KEY_GREEN_TYPE, "");
-    config.growth = prefs.getString(KEY_GROWTH, "seed");
+    config.growth = prefs.getString(KEY_GROWTH, "seedling");
     config.targetTemp = prefs.getFloat(KEY_TARGET_TEMP, 75.0f);
     config.targetHumidity = prefs.getFloat(KEY_TARGET_HUM, 60.0f);
     config.lightStartSec = prefs.getULong(KEY_LIGHT_START, 0);

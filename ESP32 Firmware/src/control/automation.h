@@ -42,7 +42,6 @@ private:
     // Control logic
     void controlFan(const SensorReadings &readings);
     void controlMister(const SensorReadings &readings);
-    void controlLED(const SensorReadings &readings);
 
     // Hysteresis to prevent oscillation
     uint32_t lastFanChange;
