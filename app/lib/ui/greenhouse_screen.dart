@@ -52,46 +52,6 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
           ],
         ),
         centerTitle: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: editMode
-                ? GestureDetector(
-                    onTap: () => setState(() => editMode = false),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.green[600],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.check, color: Colors.white, size: 18),
-                          SizedBox(width: 4),
-                          Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  )
-                : GestureDetector(
-                    onTap: () => setState(() => editMode = true),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.edit, color: Colors.white, size: 18),
-                          SizedBox(width: 4),
-                          Text('Edit Positions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -103,29 +63,66 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
           ),
 
           Positioned(
-            top: 270,
+            top: 12,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => setState(() => editMode = !editMode),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: editMode ? Colors.green[600] : Colors.black26,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        editMode ? Icons.check : Icons.edit,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        editMode ? 'Done' : 'Edit Positions',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            top: 210,
             left: 0,
             right: 0,
             child: Center(
               child: Container(
-                width: 400,
-                height: 280,
+                width: 300,
+                height: 202,
                 decoration: BoxDecoration(
                   color: Colors.green[100],
                   border: Border.all(
                     color: editMode ? Colors.green[400]! : Colors.green[700]!,
-                    width: editMode ? 2 : 4,
+                    width: editMode ? 2 : 3,
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.all(2.0),
                   child: GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
-                      crossAxisSpacing: 4,
-                      mainAxisSpacing: 4,
+                      crossAxisSpacing: 2,
+                      mainAxisSpacing: 2,
+                      childAspectRatio: 1.0,
                     ),
                     itemCount: 6,
                     itemBuilder: (context, slotIndex) {
@@ -138,11 +135,11 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
                           onAcceptWithDetails: (details) async {
                             final incoming = details.data;
                             final existing = habitatForSlot(habitats, mappedSlot);
-                              if (existing != null && existing.id != incoming.id) {
-                                existing.slotIndex = incoming.slotIndex;
-                                await existing.save();
-                              }
-                              incoming.slotIndex = mappedSlot;
+                            if (existing != null && existing.id != incoming.id) {
+                              existing.slotIndex = incoming.slotIndex;
+                              await existing.save();
+                            }
+                            incoming.slotIndex = mappedSlot;
                             await incoming.save();
                             setState(() {});
                           },
@@ -170,26 +167,27 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
                                         child: Opacity(
                                           opacity: 0.85,
                                           child: Container(
-                                            width: 90,
-                                            height: 90,
+                                            width: 70,
+                                            height: 70,
                                             decoration: BoxDecoration(
                                               color: Colors.green[500],
                                               borderRadius: BorderRadius.circular(8),
-                                              boxShadow: [
+                                              boxShadow: const [
                                                 BoxShadow(color: Colors.black38, blurRadius: 8),
                                               ],
                                             ),
                                             child: Column(
                                               mainAxisAlignment: MainAxisAlignment.center,
                                               children: [
-                                                const Icon(Icons.eco, color: Colors.white, size: 28),
-                                                const SizedBox(height: 4),
+                                                const Icon(Icons.eco, color: Colors.white, size: 22),
+                                                const SizedBox(height: 2),
                                                 Text(
                                                   habitat.name,
+                                                  maxLines: 1,
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.bold,
-                                                    fontSize: 11,
+                                                    fontSize: 9,
                                                   ),
                                                   textAlign: TextAlign.center,
                                                   overflow: TextOverflow.ellipsis,
@@ -206,33 +204,34 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Center(
-                                          child: Icon(Icons.eco_outlined, color: Colors.green[300], size: 28),
+                                          child: Icon(Icons.eco_outlined, color: Colors.green[300], size: 20),
                                         ),
                                       ),
                                       child: Center(
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(Icons.eco, color: Colors.white, size: 28),
-                                            const SizedBox(height: 4),
+                                            const Icon(Icons.eco, color: Colors.white, size: 22),
+                                            const SizedBox(height: 2),
                                             Text(
                                               habitat.name,
+                                              maxLines: 1,
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: 11,
+                                                fontSize: 9,
                                               ),
                                               textAlign: TextAlign.center,
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                            const SizedBox(height: 4),
-                                            Icon(Icons.drag_indicator, color: Colors.white54, size: 16),
+                                            const SizedBox(height: 2),
+                                            const Icon(Icons.drag_indicator, color: Colors.white54, size: 12),
                                           ],
                                         ),
                                       ),
                                     )
                                   : Center(
-                                      child: Icon(Icons.add, color: Colors.green[400], size: 28),
+                                      child: Icon(Icons.add, color: Colors.green[400], size: 22),
                                     ),
                             );
                           },
@@ -261,20 +260,22 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
                                 ? Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.eco, color: Colors.white, size: 32),
-                                      const SizedBox(height: 4),
+                                      const Icon(Icons.eco, color: Colors.white, size: 24),
+                                      const SizedBox(height: 2),
                                       Text(
                                         habitat.name,
+                                        maxLines: 1,
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 10,
                                         ),
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   )
-                                : const Icon(Icons.add, color: Colors.white54),
+                                : const Icon(Icons.add, color: Colors.white54, size: 22),
                           ),
                         ),
                       );

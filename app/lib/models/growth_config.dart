@@ -46,9 +46,9 @@ const Map<String, GrowthSpec> growthSpecs = {
     readyStart: 1.0,
   ),
   'Broccoli': GrowthSpec(
-    totalDuration: Duration(minutes: 1),
-    saplingStart: 0.2,
-    matureStart: 0.55,
+    totalDuration: Duration(minutes: 2),
+    saplingStart: 0.25,
+    matureStart: 0.5,
     readyStart: 1.0,
   ),
   'Kale': GrowthSpec(
@@ -84,7 +84,7 @@ const Map<String, GrowthSpec> growthSpecs = {
 };
 
 const Duration realGrowthDuration = Duration(days: 7);
-const Duration demoGrowthDuration = Duration(minutes: 1);
+const Duration demoGrowthDuration = Duration(minutes: 2);
 
 double calculateGrowthProgress(DateTime createdAt, GrowthSpec spec) {
   final elapsed = DateTime.now().difference(createdAt);

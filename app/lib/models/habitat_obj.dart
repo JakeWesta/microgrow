@@ -51,7 +51,7 @@ class Habitat extends HiveObject {
   List<SensorHistory> history;
 
   @HiveField(14)
-  int reservoirVolume;
+  double currentReservoirVolume;
 
   @HiveField(15)
   List<DecorationObj> decorations;
@@ -73,6 +73,9 @@ class Habitat extends HiveObject {
 
   @HiveField(21)
   int slotIndex;
+
+  @HiveField(22)
+  double maxReservoirVolume;
 
   Habitat({
     required this.id,
@@ -96,6 +99,8 @@ class Habitat extends HiveObject {
     bool? fanOverride,
     bool? misterOverride,
     int? slotIndex,
+    double? maxReservoirVolume,
+    double? currentReservoirVolume,
   })  : lightDurationSec = lightDurationSec ?? 0,
         lightIntervalSec = lightIntervalSec ?? 0,
         waterDurationSec = waterDurationSec ?? 0,
@@ -103,7 +108,8 @@ class Habitat extends HiveObject {
         createdAt = createdAt ?? DateTime.now(),
         decorations = decorations ?? [],
         harvested = harvested ?? false,
-        reservoirVolume = 50,
+        maxReservoirVolume = 2900.0,
+        currentReservoirVolume = currentReservoirVolume ?? 2900.0,
         history = history ?? [],
         blackoutAcknowledged = blackoutAcknowledged ?? false,
         lightOverride = lightOverride ?? false,
@@ -150,8 +156,13 @@ class Habitat extends HiveObject {
     await MqttService.publishGrowthStage(
       habitatId: id,
       stage: newStage,
-    );
+    ); 
   }
+
+  double get flowRate => 100 / 60;
+
+  double get waterUsedPerPulse => waterDurationSec * flowRate;
+
 
 
   GrowthStage previousStage = GrowthStage.seed;

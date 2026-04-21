@@ -42,9 +42,6 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
         habitatId: widget.habitat.id,
         actuatorName: actuator,
         val: val,
-        r: r ?? 0,
-        g: g ?? 0,
-        b: b ?? 0
       );
 
       if (actuator.toLowerCase() == 'water') {
@@ -52,6 +49,24 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
         await Future.delayed(const Duration(milliseconds: 1000));
         if (mounted) setState(() => waterFlashing = false);
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to override $actuator: $e')),
+      );
+    }
+  }
+
+  Future<void> sendLED(String actuator, int val, {int? r, int? g, int? b}) async {
+    try {
+      await MqttService.ledPublish(
+        habitatId: widget.habitat.id,
+        actuatorName: actuator,
+        val: val,
+        r: r ?? 0,
+        g: g ?? 0,
+        b: b ?? 0
+      );
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to override $actuator: $e')),
@@ -163,7 +178,7 @@ Widget lightColorCard() {
                             onTap: () {
                               setState(() => selectedColor = c);
                               if (lightOn) {
-                                sendOverride(
+                                sendLED(
                                   'light',
                                   1,
                                   r: (c.r * 255).round(),
@@ -231,7 +246,7 @@ Widget lightColorCard() {
           lightColorCard(),
           toggleCard('Light', lightOn, (val) {
           setOverride('light', val);
-          sendOverride(
+          sendLED(
             'light',
             val ? 1 : 0,
             r: (selectedColor.r * 255).round(),

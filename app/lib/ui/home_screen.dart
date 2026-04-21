@@ -174,30 +174,32 @@ class HomeScreen extends StatelessWidget {
               if (habitats.isEmpty) 
                 const SizedBox(height:30),
 
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(220, 80), 
-                  padding: const EdgeInsets.all(16),
-                  backgroundColor: Colors.green[700]
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddHabitatScreen(),
+              if (habitats.length < 6)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(220, 80), 
+                    padding: const EdgeInsets.all(16),
+                    backgroundColor: Colors.green[700]
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AddHabitatScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Add a Habitat',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color:  Color.fromARGB(255, 255, 255, 255),
+                      fontFamily: "Times"
                     ),
-                  );
-                },
-                child: const Text(
-                  'Add a Habitat',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color:  Color.fromARGB(255, 255, 255, 255),
-                    fontFamily: "Times"
                   ),
                 ),
-              ),
+                
 
               const SizedBox(height:15),
 

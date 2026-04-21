@@ -25,6 +25,24 @@ class _TomagachiScreenState extends State<TomagachiScreen>
   Timer? spriteTimer;
   Timer? moveTimer;
 
+  bool _isPartying = false;
+  Timer? _partyTimer;
+  Timer? _discoFlashTimer;
+  int _partyTicks = 0;
+
+  double _discoBallY = -250.0;    
+  double _discoBallTargetY = -150.0;
+  bool _discoDescending = false;
+  bool _discoRetracting = false;
+  bool _discoFlash = false;     
+  String get _discoAsset {
+    if (_discoDescending || _discoRetracting) return 'assets/sprites/Disco_1.png';
+    return _discoFlash ? 'assets/sprites/Disco_3.png' : 'assets/sprites/Disco_2.png';
+  }
+
+  static const double _discoLoweredY = -9.0;
+  static const double _discoHiddenY = -250.0;
+
   double plantX = 0;
   double plantY = 0;
   double plantTargetX = 0;
@@ -89,10 +107,88 @@ class _TomagachiScreenState extends State<TomagachiScreen>
     });
   }
 
+  void _startPartyMode() {
+    if (_isPartying) return;
+
+    setState(() {
+      _isPartying = true;
+      _discoDescending = true;
+      _discoRetracting = false;
+      _discoBallY = _discoHiddenY;
+      _discoBallTargetY = _discoLoweredY;
+    });
+
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (!mounted) return;
+      setState(() {
+        _discoDescending = false;
+      });
+
+      _partyTicks = 0;
+
+      _discoFlashTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() => _discoFlash = !_discoFlash);
+      });
+
+      _partyTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+        if (_partyTicks >= 15) {
+          timer.cancel();
+          _discoFlashTimer?.cancel();
+
+          if (mounted) {
+            setState(() {
+              _discoDescending = false;
+              _discoRetracting = true;
+              _discoBallTargetY = _discoHiddenY;
+            });
+          }
+
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              setState(() {
+                _isPartying = false;
+                _discoRetracting = false;
+                _discoBallY = _discoHiddenY;
+              });
+            }
+          });
+
+          await MqttService.ledPublish(
+          habitatId: widget.habitat.id,
+          actuatorName: 'light',
+          val: 0,
+          r: 0,
+          g: 0,
+          b: 0,
+        );
+
+          return;
+        }
+
+        await MqttService.ledPublish(
+          habitatId: widget.habitat.id,
+          actuatorName: 'light',
+          val: 1,
+          r: random.nextInt(256),
+          g: random.nextInt(256),
+          b: random.nextInt(256),
+        );
+
+        _partyTicks++;
+      });
+    });
+  }
+
   @override
   void dispose() {
     moveTimer?.cancel();
     spriteTimer?.cancel();
+    _partyTimer?.cancel();
+    _discoFlashTimer?.cancel();
     controller.dispose();
     super.dispose();
   }
@@ -191,7 +287,12 @@ class _TomagachiScreenState extends State<TomagachiScreen>
                     border: Border.all(color: Colors.green[300]!, width: 1),
                   ),
                   padding: const EdgeInsets.all(6),
-                  child: Image.asset(assetPath, fit: BoxFit.contain),
+                  child: Image.asset(
+                    assetPath,
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -295,37 +396,61 @@ class _TomagachiScreenState extends State<TomagachiScreen>
 
               const SizedBox(height: 16),
 
-              shopItem(
-                assetPath: 'assets/sprites/MicroGrow_Sign.png',
-                name: 'MicroGrow Sign',
-                cost: 50,
-                type: 'sign1',
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.only(top: 16, bottom: 16),
+                  children: [
+                    shopItem(
+                      assetPath: 'assets/sprites/MicroGrow_Sign.png',
+                      name: 'MicroGrow Sign',
+                      cost: 50,
+                      type: 'sign1',
+                    ),
+                    shopItem(
+                      assetPath: 'assets/sprites/Microgreen_Rug.png',
+                      name: 'Microgreen Rug',
+                      cost: 100,
+                      type: 'rug',
+                    ),
+                    shopItem(
+                      assetPath: 'assets/sprites/Radio.png',
+                      name: 'Radio',
+                      cost: 200,
+                      type: 'radio',
+                    ),
+                    shopItem(
+                      assetPath: 'assets/sprites/Rabbit_Statue.png',
+                      name: 'Rabbit Statue',
+                      cost: 300,
+                      type: 'statue',
+                    ),
+                    shopItem(
+                      assetPath: 'assets/sprites/Rock_Poster.png',
+                      name: 'Plant Rock Poster',
+                      cost: 150,
+                      type: 'poster',
+                    ),
+                    shopItem(
+                      assetPath: 'assets/sprites/Couch.png',
+                      name: 'Couch',
+                      cost: 300,
+                      type: 'couch',
+                    ),
+                    shopItem(
+                      assetPath: 'assets/sprites/Dreamcatcher.png',
+                      name: 'Dreamcatcher',
+                      cost: 100,
+                      type: 'dreamcatcher',
+                    ),
+                    shopItem(
+                      assetPath: 'assets/sprites/Party_Button.png',
+                      name: 'Party Button',
+                      cost: 500,
+                      type: 'button1',
+                    ),
+                  ],
+                ),
               ),
-              shopItem(
-                assetPath: 'assets/sprites/Microgreen_Rug.png',
-                name: 'Microgreen Rug',
-                cost: 100,
-                type: 'rug',
-              ),
-              shopItem(
-                assetPath: 'assets/sprites/Couch.png',
-                name: 'Couch',
-                cost: 300,
-                type: 'couch',
-              ),
-              shopItem(
-                assetPath: 'assets/sprites/Dreamcatcher.png',
-                name: 'Dreamcatcher',
-                cost: 200,
-                type: 'dreamcatcher',
-              ),
-              shopItem(
-                assetPath: 'assets/sprites/Party_Button.png',
-                name: 'Party Button',
-                cost: 500,
-                type: 'button1',
-              ),
-
             ],
           ),
         ),
@@ -337,6 +462,10 @@ class _TomagachiScreenState extends State<TomagachiScreen>
           plantY += (plantTargetY - plantY) * 0.018;
           plantScale += (plantTargetScale - plantScale) * 0.018;
 
+          if (_isPartying || _discoRetracting) {
+            _discoBallY += (_discoBallTargetY - _discoBallY) * 0.02;
+          }
+
           final double distToTarget = (plantTargetX - plantX).abs() + (plantTargetY - plantY).abs();
           final double hopIntensity = (distToTarget / 30).clamp(0.0, 1.0);
           final double yOffset = sin(controller.value * pi) * 14 * hopIntensity;
@@ -347,25 +476,52 @@ class _TomagachiScreenState extends State<TomagachiScreen>
             children: [
 
               Positioned.fill(
-                child: Image.asset(
-                  'assets/sprites/Tomagachi_Background.png',
-                  fit: BoxFit.cover,
+              child: Image.asset(
+                _isPartying
+                    ? 'assets/sprites/Tomagachi_Background_Night.png'
+                    : 'assets/sprites/Tomagachi_Background.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+
+              Positioned(
+                top: _discoBallY,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Image.asset(
+                    _discoAsset,
+                    width: 250,
+                    height: 250,
+                  ),
                 ),
               ),
 
               ...List.generate(widget.habitat.decorations.length, (index) {
                 final deco = widget.habitat.decorations[index];
+
+                final isPartyButton = deco.type == 'button1';
+
                 final decoWidget = deco.type == 'sign1'
-                        ? Image.asset('assets/sprites/MicroGrow_Sign.png', width: 300, height: 250)
-                        : deco.type == 'rug'
-                        ? Image.asset('assets/sprites/Microgreen_Rug.png', width: 400, height: 320)
-                        : deco.type == 'dreamcatcher'
-                        ? Image.asset('assets/sprites/Dreamcatcher.png', width: 300, height: 250)
-                        : deco.type == 'couch'
-                        ? Image.asset('assets/sprites/Couch.png', width: 400, height: 320)
-                        : deco.type == 'button1'
-                        ? Image.asset('assets/sprites/Party_Button.png', width: 100, height: 100)
-                        : const SizedBox.shrink();
+                    ? Image.asset('assets/sprites/MicroGrow_Sign.png', width: 260, height: 200)
+                    : deco.type == 'rug'
+                    ? Image.asset('assets/sprites/Microgreen_Rug.png', width: 400, height: 320)
+                    : deco.type == 'dreamcatcher'
+                    ? Image.asset('assets/sprites/Dreamcatcher.png', width: 300, height: 250)
+                    : deco.type == 'radio'
+                    ? Image.asset('assets/sprites/Radio.png', width: 220, height: 180)
+                    : deco.type == 'poster'
+                    ? Image.asset('assets/sprites/Rock_Poster.png', width: 100, height: 150)
+                    : deco.type == 'statue'
+                    ? Image.asset('assets/sprites/Rabbit_Statue.png', width: 200, height: 150)
+                    : deco.type == 'couch'
+                    ? Image.asset('assets/sprites/Couch.png', width: 280, height: 210)
+                    : isPartyButton
+                    ? GestureDetector(
+                        onTap: !editMode ? _startPartyMode : null,
+                        child: Image.asset('assets/sprites/Party_Button.png', width: 100, height: 100),
+                      )
+                    : const SizedBox.shrink();
 
                 return Positioned(
                   left: deco.x,

@@ -96,8 +96,8 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
         lightDurationSec: 10, 
         lightIntervalSec: 15,
         waterStartSec: secSinceMidnight,
-        waterDurationSec: 5, 
-        waterIntervalSec: 15, 
+        waterDurationSec: 10, 
+        waterIntervalSec: 10, 
         blackoutDuration: 10,
       ),
       'Kale': HabitatConfig(
@@ -192,13 +192,18 @@ class _AddHabitatScreenState extends State<AddHabitatScreen> {
               children: [
                 TextFormField(
                   controller: nameController,
+                  maxLength: 5, 
                   decoration: const InputDecoration(
                     labelText: "Habitat Name",
                     border: OutlineInputBorder(),
+                    counterText: "",
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Please enter a name";
+                    }
+                    if (value.length > 5) {
+                      return "Max 5 characters allowed";
                     }
                     return null;
                   },
