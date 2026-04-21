@@ -124,12 +124,12 @@ void DisplayManager::drawStatusBar()
     uint16_t wifiColor = wifiConnected ? COLOR_GREEN_OK : COLOR_ERROR;
     tft.setTextColor(wifiColor, COLOR_SURFACE);
     tft.setCursor(4, 5);
-    tft.print(wifiConnected ? "WiFi+" : "WiFi-");
+    tft.print("WiFi");
 
     uint16_t mqttColor = mqttConnected ? COLOR_GREEN_OK : COLOR_ERROR;
     tft.setTextColor(mqttColor, COLOR_SURFACE);
     tft.setCursor(TFT_WIDTH - 66, 5);
-    tft.print(mqttConnected ? "MQTT+" : "MQTT-");
+    tft.print("MQTT");
 }
 
 void DisplayManager::drawPageHeader(const String &title, uint16_t color)
@@ -305,7 +305,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
         tft.fillRect(0, imgY, TFT_WIDTH, plantH, COLOR_BG);
         if (growth.length() > 0)
         {
-            drawPlant(cx, baseY);
+            // drawPlant(cx, baseY);
             lastGrowth = growth;
         }
     }
