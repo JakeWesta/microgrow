@@ -12,6 +12,7 @@
 #include <control/automation.h>
 #include <control/scheduler.h>
 #include <hardware/actuators.h>
+#include <FastLED.h>
 
 // Forward declarations
 class ActuatorManager;
