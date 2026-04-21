@@ -42,6 +42,7 @@ DeviceConfig PersistenceManager::loadConfig()
     }
 
     config.greenType = prefs.getString(KEY_GREEN_TYPE, "");
+    config.growth = prefs.getString(KEY_GROWTH, "seed");
     config.targetTemp = prefs.getFloat(KEY_TARGET_TEMP, 75.0f);
     config.targetHumidity = prefs.getFloat(KEY_TARGET_HUM, 60.0f);
     config.lightStartSec = prefs.getULong(KEY_LIGHT_START, 0);
@@ -54,7 +55,8 @@ DeviceConfig PersistenceManager::loadConfig()
 
     prefs.end();
     Serial.println("Configuration loaded from NVS");
-    Serial.printf("  Green Type: %s\n", config.greenType.c_str());
+    Serial.printf("  Green Type: %s, Growth: %s\n",
+                  config.greenType.c_str(), config.growth.c_str());
     Serial.printf("  Targets: Temp=%.1fF, Humidity=%.1f%%\n",
                   config.targetTemp, config.targetHumidity);
     return config;
@@ -68,44 +70,7 @@ void PersistenceManager::clear()
     Serial.println("Configuration cleared from NVS");
 }
 
-void PersistenceManager::saveTargets(float temperature, float humidity)
-{
-    prefs.begin(NAMESPACE, false);
-    prefs.putFloat(KEY_TARGET_TEMP, temperature);
-    prefs.putFloat(KEY_TARGET_HUM, humidity);
-    prefs.end();
-    Serial.printf("Targets saved: Temp=%.1fF, Humidity=%.1f%%\n", temperature, humidity);
-}
-
-void PersistenceManager::saveLightSchedule(uint32_t start, uint32_t duration, uint32_t interval)
-{
-    prefs.begin(NAMESPACE, false);
-    prefs.putULong(KEY_LIGHT_START, start);
-    prefs.putULong(KEY_LIGHT_DUR, duration);
-    prefs.putULong(KEY_LIGHT_INT, interval);
-    prefs.end();
-    Serial.printf("Light schedule saved: start=%lu, dur=%lu, int=%lu\n",
-                  start, duration, interval);
-}
-
-void PersistenceManager::saveWaterSchedule(uint32_t start, uint32_t duration, uint32_t interval)
-{
-    prefs.begin(NAMESPACE, false);
-    prefs.putULong(KEY_WATER_START, start);
-    prefs.putULong(KEY_WATER_DUR, duration);
-    prefs.putULong(KEY_WATER_INT, interval);
-    prefs.end();
-    Serial.printf("Water schedule saved: start=%lu, dur=%lu, int=%lu\n",
-                  start, duration, interval);
-}
-
-void PersistenceManager::saveHabitatInfo(const String &type, const String &growth)
-{
-    prefs.begin(NAMESPACE, false);
-    prefs.putString(KEY_GREEN_TYPE, type);
-    prefs.end();
-    Serial.printf("Habitat info saved: %s\n", type.c_str());
-}
+//  Reading ring buffer
 
 static void readingKey(char *buf, uint8_t slot)
 {
@@ -201,10 +166,4 @@ void PersistenceManager::clearReadings()
     }
     prefs.end();
     Serial.println("Reading history cleared");
-}
-
-void PersistenceManager::setBlackout(bool blackout)
-{
-    prefs.begin(NAMESPACE, false);
-    prefs.putBool(KEY_BLACKOUT, blackout);
 }

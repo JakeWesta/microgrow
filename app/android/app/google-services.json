@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "812569059834",
+    "project_id": "microgrow-28b07",
+    "storage_bucket": "microgrow-28b07.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:812569059834:android:025287264848b8356e4443",
+        "android_client_info": {
+          "package_name": "com.microgrow.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpXNxwcCgdXXsq6iRGiTieJqlwwilOraE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

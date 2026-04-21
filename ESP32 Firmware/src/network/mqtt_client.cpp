@@ -3,7 +3,6 @@
 #include "../control/automation.h"
 #include "../control/scheduler.h"
 #include "../hardware/actuators.h"
-#include "../storage/persistence.h"
 
 MQTTClient *MQTTClient::instance = nullptr;
 
@@ -16,32 +15,27 @@ MQTTClient &MQTTClient::getInstance(const String &deviceId)
 
 MQTTClient::MQTTClient(const String &deviceId)
     : client(espClient), deviceId(deviceId),
-      initState(InitState::WAITING_FOR_ID), lastReconnectAttempt(0),
+      initState(InitState::UNCONFIGURED), lastReconnectAttempt(0),
       lastPublish(0), actuators(nullptr), scheduler(nullptr),
-      automation(nullptr), display(nullptr), growth("seed")
+      automation(nullptr), display(nullptr)
 {
-
   instance = this;
 }
 
-bool MQTTClient::begin()
+bool MQTTClient::begin(bool alreadyConfigured, const String &gt, const String &gr)
 {
-  // Check if we have existing configuration
-  PersistenceManager storage;
-  if (storage.isConfigured())
-  {
-    Serial.println("Found existing configuration - marking as initialized");
-    initState = InitState::COMPLETE;
+  greenType = gt;
+  growth = gr;
 
-    // Load the greenType for reference
-    DeviceConfig config = storage.loadConfig();
-    greenType = config.greenType;
-    growth = config.growth;
+  if (alreadyConfigured)
+  {
+    initState = InitState::COMPLETE;
+    Serial.println("MQTT: device already configured");
   }
   else
   {
-    Serial.println("No existing configuration - awaiting init messages");
-    initState = InitState::WAITING_FOR_ID;
+    initState = InitState::UNCONFIGURED;
+    Serial.println("MQTT: awaiting /init message");
   }
 
   client.setServer(MQTT_BROKER, MQTT_PORT);
@@ -56,15 +50,11 @@ bool MQTTClient::begin()
 bool MQTTClient::connect()
 {
   if (isConnected())
-  {
     return true;
-  }
 
   uint32_t now = millis();
   if (now - lastReconnectAttempt < MQTT_RECONNECT_DELAY_MS)
-  {
     return false;
-  }
 
   lastReconnectAttempt = now;
 
@@ -77,15 +67,13 @@ bool MQTTClient::connect()
 
     if (initState == InitState::COMPLETE)
     {
-      // Already configured, subscribe to habitat topics only
       subscribeToHabitatTopics();
-      Serial.println("Already configured - skipping init subscription");
+      Serial.println("Already configured - subscribed to habitat topics");
     }
     else
     {
-      // Awaiting configuration, subscribe to init topic
       subscribeToInitTopics();
-      Serial.println("Awaiting configuration via init topic");
+      Serial.println("Awaiting configuration via /init");
     }
 
     return true;
@@ -109,99 +97,77 @@ void MQTTClient::disconnect()
 void MQTTClient::loop()
 {
   if (isConnected())
-  {
     client.loop();
-  }
 }
 
 void MQTTClient::subscribeToInitTopics()
 {
-  String initTopic = "microgrow/" + deviceId + "/init";
-  client.subscribe(initTopic.c_str());
-  Serial.printf("Subscribed to: %s\n", initTopic.c_str());
+  String topic = "microgrow/" + deviceId + "/init";
+  client.subscribe(topic.c_str());
+  Serial.printf("Subscribed to: %s\n", topic.c_str());
 }
 
 void MQTTClient::subscribeToHabitatTopics()
 {
-  String overrideTopic = "microgrow/" + deviceId + "/override";
-  String refreshTopic = "microgrow/" + deviceId + "/refresh";
-  String growthTopic = "microgrow/" + deviceId + "/growth";
-  String deleteTopic = "microgrow/" + deviceId + "/delete";
-  String blackoutTopic = "microgrow/" + deviceId + "/blackout";
-  client.subscribe(overrideTopic.c_str());
-  client.subscribe(refreshTopic.c_str());
-  client.subscribe(growthTopic.c_str());
-  client.subscribe(deleteTopic.c_str());
-  client.subscribe(blackoutTopic.c_str());
+  String base = "microgrow/" + deviceId + "/";
+  client.subscribe((base + "override").c_str());
+  client.subscribe((base + "refresh").c_str());
+  client.subscribe((base + "growth").c_str());
+  client.subscribe((base + "delete").c_str());
+  client.subscribe((base + "blackout").c_str());
+  Serial.printf("Subscribed to habitat topics for %s\n", deviceId.c_str());
 }
 
-bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow,
-                                   CRGB color)
+// Publishing
+
+bool MQTTClient::publishSensorData(float temp, float humidity, bool waterLow, CRGB color)
 {
   if (!isConnected())
-  {
     return false;
-  }
 
   String base = "microgrow/" + deviceId + "/";
 
-  bool success = true;
-  success &= client.publish((base + "temp").c_str(), String(temp, 1).c_str());
-  success &=
-      client.publish((base + "humidity").c_str(), String(humidity, 1).c_str());
-  success &= client.publish((base + "water").c_str(),
-                            String(waterLow ? 1 : 0).c_str());
   JsonDocument colorDoc;
   colorDoc["r"] = color.r;
   colorDoc["g"] = color.g;
   colorDoc["b"] = color.b;
   String colorJson;
   serializeJson(colorDoc, colorJson);
-  success &= client.publish((base + "light").c_str(), colorJson.c_str());
 
-  return success;
+  bool ok = true;
+  ok &= client.publish((base + "temp").c_str(), String(temp, 1).c_str());
+  ok &= client.publish((base + "humidity").c_str(), String(humidity, 1).c_str());
+  ok &= client.publish((base + "water").c_str(), String(waterLow ? 1 : 0).c_str());
+  ok &= client.publish((base + "light").c_str(), colorJson.c_str());
+  return ok;
 }
 
 bool MQTTClient::publishStatus(const String &message)
 {
   if (!isConnected())
-  {
     return false;
-  }
 
   String topic = "microgrow/" + deviceId + "/status";
   return client.publish(topic.c_str(), message.c_str());
 }
 
-void MQTTClient::staticCallback(char *topic, byte *payload,
-                                unsigned int length)
+// Callback dispatch
+
+void MQTTClient::staticCallback(char *topic, byte *payload, unsigned int length)
 {
   if (instance)
-  {
     instance->messageCallback(topic, payload, length);
-  }
 }
 
-bool MQTTClient::publishWater(void)
+void MQTTClient::messageCallback(char *topic, byte *payload, unsigned int length)
 {
-  String topic = "microgrow/" + deviceId + "/water";
-  return client.publish(topic.c_str(), "Water");
-}
-
-void MQTTClient::messageCallback(char *topic, byte *payload,
-                                 unsigned int length)
-{
-  // Convert payload to string
   String message;
   message.reserve(length);
   for (unsigned int i = 0; i < length; i++)
-  {
     message += (char)payload[i];
-  }
 
   Serial.printf("MQTT [%s]: %s\n", topic, message.c_str());
 
-  // Parse JSON
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, message);
   if (err)
@@ -210,293 +176,362 @@ void MQTTClient::messageCallback(char *topic, byte *payload,
     return;
   }
 
-  String topicStr = String(topic);
+  String t = String(topic);
 
-  // Handle init messages
-  if (topicStr.endsWith("/init"))
+  if (t.endsWith("/init"))
   {
     handleInit(doc);
     return;
   }
-
-  // Handle override messages
-  if (topicStr.endsWith("/override"))
+  if (t.endsWith("/override"))
   {
     handleOverride(doc);
     return;
   }
-
-  if (topicStr.endsWith("/refresh"))
+  if (t.endsWith("/refresh"))
   {
     handleRefresh(doc);
     return;
   }
-
-  if (topicStr.endsWith("/growth"))
+  if (t.endsWith("/growth"))
   {
     handleGrowth(doc);
     return;
   }
-
-  if (topicStr.endsWith("/delete"))
+  if (t.endsWith("/delete"))
   {
     handleDelete();
     return;
   }
-
-  if (topicStr.endsWith("/blackout"))
+  if (t.endsWith("/blackout"))
   {
     handleBlackout(doc);
     return;
   }
 }
 
+// Message handlers
+
+/*
+ * /init - single message, complete configuration.
+ *
+ * Expected JSON example:
+ * {
+ *   "greenType":       String,
+ *   "targetTemp":      float,
+ *   "targetHumidity":  float,
+ *   "blackout":        bool,
+ *   "light": { "startSec": uint32_t, "durationSec": uint32_t, "intervalSec": uint32_t },
+ *   "water": { "startSec": uint32_t, "durationSec": uint32_t, "intervalSec": uint32_t }
+ * }
+ */
 void MQTTClient::handleInit(JsonDocument &doc)
 {
-  // Check if this is a greenType message
-  if (doc["greenType"].is<String>())
+  if (!doc["greenType"].is<String>() ||
+      !doc["light"].is<JsonObject>() ||
+      !doc["water"].is<JsonObject>())
   {
-    greenType = doc["greenType"].as<String>();
+    Serial.println("ERROR: /init message missing required fields");
+    serializeJsonPretty(doc, Serial);
+    Serial.println();
+    return;
+  }
 
-    float targetTemp = doc["target"]["temp"].as<float>();
-    float targetHum = doc["target"]["humidity"].as<float>();
-    blackout = doc["blackout"].as<int>() != 0;
+  // Build a complete DeviceConfig from the single message.
+  DeviceConfig config;
+  config.greenType = doc["greenType"].as<String>();
+  config.growth = growth; // preserve current growth stage
+  config.targetTemp = doc["targetTemp"].as<float>();
+  config.targetHumidity = doc["targetHumidity"].as<float>();
+  config.blackout = doc["blackout"] | false;
+
+  config.lightStartSec = doc["light"]["startSec"].as<uint32_t>();
+  config.lightDurationSec = doc["light"]["durationSec"].as<uint32_t>();
+  config.lightIntervalSec = doc["light"]["intervalSec"].as<uint32_t>();
+
+  config.waterStartSec = doc["water"]["startSec"].as<uint32_t>();
+  config.waterDurationSec = doc["water"]["durationSec"].as<uint32_t>();
+  config.waterIntervalSec = doc["water"]["intervalSec"].as<uint32_t>();
+
+  Serial.printf("Init: greenType=%s, temp=%.1f, hum=%.1f, blackout=%d\n",
+                config.greenType.c_str(), config.targetTemp,
+                config.targetHumidity, config.blackout);
+  Serial.printf("  Light: start=%u dur=%u int=%u\n",
+                config.lightStartSec, config.lightDurationSec, config.lightIntervalSec);
+  Serial.printf("  Water: start=%u dur=%u int=%u\n",
+                config.waterStartSec, config.waterDurationSec, config.waterIntervalSec);
+
+  // Apply to in-memory subsystems.
+  greenType = config.greenType;
+  blackout = config.blackout;
+
+  if (automation)
+  {
+    automation->setTargets(config.targetTemp, config.targetHumidity);
+    automation->enable();
+  }
+
+  if (scheduler)
+  {
+    scheduler->getLightSchedule().setTiming(
+        config.lightStartSec, config.lightDurationSec, config.lightIntervalSec);
+    scheduler->getLightSchedule().enable();
     if (blackout)
       scheduler->getLightSchedule().pause();
 
-    Serial.printf("Received greenType: %s\n", greenType.c_str());
-
-    // Set automation targets
-    if (automation)
-    {
-      automation->setTargets(targetTemp, targetHum);
-      automation->enable();
-    }
-
-    if (display)
-    {
-      display->setGreenType(greenType);
-    }
-
-    // Save to NVS
-    PersistenceManager storage;
-    storage.saveHabitatInfo(greenType, growth);
-    storage.saveTargets(targetTemp, targetHum);
-
-    initState = InitState::WAITING_FOR_SCHEDULE;
+    scheduler->getWaterSchedule().setTiming(
+        config.waterStartSec, config.waterDurationSec, config.waterIntervalSec);
+    scheduler->getWaterSchedule().enable();
   }
-  // Check if this is schedule message
-  else if (doc["light"].is<JsonObject>() && doc["water"].is<JsonObject>())
-  {
-    Serial.println("Received schedule configuration");
 
-    // Extract schedule data
-    uint32_t lightStart = doc["light"]["startTimeSec"].as<uint32_t>();
-    uint32_t lightDur = doc["light"]["durationSec"].as<uint32_t>();
-    uint32_t lightInt = doc["light"]["intervalSec"].as<uint32_t>();
+  if (display)
+    display->setGreenType(config.greenType);
 
-    uint32_t waterStart = doc["water"]["startTimeSec"].as<uint32_t>();
-    uint32_t waterDur = doc["water"]["durationSec"].as<uint32_t>();
-    uint32_t waterInt = doc["water"]["intervalSec"].as<uint32_t>();
+  // Delegate persistence to main.cpp via callback - MQTTClient does not
+  // touch PersistenceManager directly.
+  if (callbacks.onConfig)
+    callbacks.onConfig(config);
 
-    Serial.printf("Light schedule: start=%u, duration=%u, interval=%u\n",
-                  lightStart, lightDur, lightInt);
-    Serial.printf("Water schedule: start=%u, duration=%u, interval=%u\n",
-                  waterStart, waterDur, waterInt);
+  // Transition to configured state and swap subscriptions.
+  initState = InitState::COMPLETE;
+  client.unsubscribe(("microgrow/" + deviceId + "/init").c_str());
+  subscribeToHabitatTopics();
 
-    // Configure schedules
-    if (scheduler)
-    {
-      scheduler->getLightSchedule().setTiming(lightStart, lightDur, lightInt);
-      scheduler->getLightSchedule().enable();
-
-      scheduler->getWaterSchedule().setTiming(waterStart, waterDur, waterInt);
-      scheduler->getWaterSchedule().enable();
-    }
-
-    // Save to NVS
-    PersistenceManager storage;
-    storage.saveLightSchedule(lightStart, lightDur, lightInt);
-    storage.saveWaterSchedule(waterStart, waterDur, waterInt);
-
-    initState = InitState::COMPLETE;
-
-    // Configuration complete
-    client.unsubscribe(("microgrow/" + deviceId + "/init").c_str());
-    subscribeToHabitatTopics();
-
-    Serial.println("Configuration complete!");
-    saveConfiguration();
-    publishStatus("configured");
-  }
-  else
-  {
-    Serial.println("ERROR: Unknown init message format");
-    serializeJsonPretty(doc, Serial);
-    Serial.println();
-  }
+  publishStatus("configured");
+  Serial.println("Init complete");
 }
 
+// Pump pulse task (file-local, cancellable)
+struct PumpPulseContext
+{
+  WaterPump *pump;
+  Scheduler *scheduler;
+  uint32_t durationMs;
+};
+
+static TaskHandle_t pumpPulseHandle = NULL;
+static volatile bool pumpPulseActive = false;
+
+static void pumpPulseTask(void *param)
+{
+  PumpPulseContext *ctx = static_cast<PumpPulseContext *>(param);
+
+  WaterPump *pump = ctx->pump;
+  Scheduler *scheduler = ctx->scheduler;
+  uint32_t durationMs = ctx->durationMs;
+
+  pump->on();
+
+  // Sleep for duration (will be interrupted if task is deleted)
+  vTaskDelay(pdMS_TO_TICKS(durationMs));
+
+  // Normal completion path
+  pump->off();
+  pump->setManualOverride(false);
+
+  if (scheduler)
+    scheduler->getWaterSchedule().resume();
+
+  pumpPulseActive = false;
+  pumpPulseHandle = NULL;
+
+  delete ctx;
+  vTaskDelete(NULL);
+}
+
+/*
+ * /override - manual actuator control.
+ *
+ * Expected JSON example:
+ * { "actuator": <ActuatorId>, "enable": <bool>, ... }
+ *
+ * Fan:   { "actuator": 0, "enable": true }
+ * Pump:  { "actuator": 1, "enable": true }
+ * LED:   { "actuator": 2, "enable": true, "color": { "r": 255, "g": 255, "b": 255 } }
+ * Mister:{ "actuator": 3, "enable": true }
+ */
 void MQTTClient::handleOverride(JsonDocument &doc)
 {
   if (!actuators)
   {
-    Serial.println("Actuators not available");
+    Serial.println("Override: actuators not available");
     return;
   }
 
-  int actuatorId = doc["actuator"].as<int>();
-  bool enable = doc["enable"].as<bool>();
+  ActuatorId id = static_cast<ActuatorId>(doc["actuator"].as<int>());
+  bool en = doc["enable"].as<bool>();
 
-  Serial.printf("Override: actuator=%d, enable=%d\n", actuatorId, enable);
+  Serial.printf("Override: actuator=%d, enable=%d\n", (int)id, en);
 
-#define FAN_ID 0
-#define WATER_PUMP_ID 1
-#define LED_ID 2
-#define MISTER_ID 3
-
-  switch (actuatorId)
+  switch (id)
   {
-  case FAN_ID:
+  case ActuatorId::FAN:
   {
     Fan &fan = actuators->getFan();
-    if (enable)
-    {
-      uint8_t value = doc["value"] | 255; // default full power if not provided
-      fan.setManualOverride(true);
-      if (value)
-        fan.on();
-      else
-        fan.off();
-    }
+    fan.setManualOverride(en);
+    if (en)
+      fan.on();
     else
-    {
-      fan.setManualOverride(false);
-      // Automation will take over on next update()
-    }
+      fan.off();
     break;
   }
 
-  case WATER_PUMP_ID:
+  case ActuatorId::WATER_PUMP:
   {
     WaterPump &pump = actuators->getPump();
-    if (enable)
+
+    if (en)
     {
-      uint8_t value = doc["value"] | 1; // non-zero means ON
+      if (pumpPulseActive)
+      {
+        Serial.println("Pump pulse already active, ignoring");
+        break;
+      }
+
       pump.setManualOverride(true);
 
+      uint32_t durationMs = 0;
       if (scheduler)
+      {
+        durationMs =
+            scheduler->getWaterSchedule().getTiming().durationSec * 1000;
         scheduler->getWaterSchedule().pause();
+      }
 
-      if (value)
-        pump.on();
+      PumpPulseContext *ctx = new PumpPulseContext{
+          &pump,
+          scheduler,
+          durationMs};
+
+      BaseType_t ok = xTaskCreatePinnedToCore(
+          pumpPulseTask,
+          "PumpPulse",
+          4096,
+          ctx,
+          1,
+          &pumpPulseHandle,
+          1);
+
+      if (ok == pdPASS)
+      {
+        pumpPulseActive = true;
+      }
       else
-        pump.off();
+      {
+        Serial.println("Failed to create pump pulse task");
+        delete ctx;
+        pump.setManualOverride(false);
+      }
     }
     else
     {
+      // Cancel running pulse if active
+      if (pumpPulseHandle != NULL)
+      {
+        vTaskDelete(pumpPulseHandle);
+        pumpPulseHandle = NULL;
+      }
+
       pump.off();
       pump.setManualOverride(false);
 
       if (scheduler)
         scheduler->getWaterSchedule().resume();
+
+      pumpPulseActive = false;
     }
     break;
   }
 
-  case LED_ID:
+  case ActuatorId::LED:
   {
     LEDStrip &leds = actuators->getLEDs();
-    if (enable)
+    if (en)
     {
-      uint8_t r = doc["r"].as<uint8_t>();
-      uint8_t g = doc["g"].as<uint8_t>();
-      uint8_t b = doc["b"].as<uint8_t>();
+      uint8_t r = doc["color"]["r"].as<uint8_t>();
+      uint8_t g = doc["color"]["g"].as<uint8_t>();
+      uint8_t b = doc["color"]["b"].as<uint8_t>();
       leds.setColor(r, g, b);
       leds.setManualOverride(true);
-
-      // Pause light schedule while manual override is active
       if (scheduler)
-      {
         scheduler->getLightSchedule().pause();
-      }
     }
     else
     {
       leds.off();
       leds.setManualOverride(false);
-
-      // Resume light schedule
       if (scheduler)
-      {
         scheduler->getLightSchedule().resume();
-      }
     }
     break;
   }
-  case MISTER_ID:
+
+  case ActuatorId::MISTER:
   {
     Mister &mister = actuators->getMister();
-    if (enable)
-    {
-      uint8_t value = doc["value"] | 1; // non-zero means ON
-      mister.setManualOverride(true);
-      if (value)
-        mister.on();
-      else
-        mister.off();
-    }
+    mister.setManualOverride(en);
+    if (en)
+      mister.on();
     else
-    {
-      mister.setManualOverride(false);
-      // Automation will handle it next cycle
-    }
+      mister.off();
     break;
   }
 
   default:
-    Serial.printf("Unknown actuator ID: %d\n", actuatorId);
+    Serial.printf("Override: unknown actuator id %d\n", (int)id);
     break;
   }
 }
 
+/*
+ * /refresh - publish stored readings back to the broker, then clear the buffer.
+ *
+ * Expected JSON example: {} (any message on this topic triggers the dump)
+ *
+ * Readings are published to microgrow/<id>/history (not /refresh, to avoid
+ * the device receiving its own published messages).
+ */
 void MQTTClient::handleRefresh(JsonDocument &doc)
 {
-  if (!doc["meow"].is<int>())
+  PersistenceManager storage;
+  uint8_t count = storage.getReadingCount();
+  if (count == 0)
   {
+    Serial.println("Refresh: no readings stored");
     return;
   }
-  PersistenceManager storage;
-  uint8_t readingCount = storage.getReadingCount();
-  StoredReading *readings = new StoredReading[readingCount];
+
+  StoredReading *readings = new StoredReading[count];
   storage.getAllReadings(readings);
 
-  String topic = "microgrow/" + deviceId + "/refresh";
-  Serial.printf("Refresh publish topic: %s\n", topic.c_str());
+  String outTopic = "microgrow/" + deviceId + "/history";
+  Serial.printf("Refresh: publishing %u readings to %s\n", count, outTopic.c_str());
 
   char timeStr[20];
-  for (uint8_t i = 0; i < readingCount; i++)
+  for (uint8_t i = 0; i < count; i++)
   {
-    JsonDocument msgDoc;
-    JsonArray wrapper = msgDoc.to<JsonArray>();
-    JsonObject obj = wrapper.add<JsonObject>();
-    Serial.println("Readings:");
-    Serial.printf(" temperature: %f\n", readings[i].temperature);
-    obj["temp"] = readings[i].temperature;
-    obj["humidity"] = readings[i].humidity;
+    JsonDocument msg;
+    msg["temp"] = readings[i].temperature;
+    msg["humidity"] = readings[i].humidity;
     struct tm *ti = localtime(&readings[i].timestamp);
     strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", ti);
-    obj["timestamp"] = timeStr;
+    msg["timestamp"] = timeStr;
 
-    String jsonString;
-    serializeJson(msgDoc, jsonString);
-    client.publish(topic.c_str(), jsonString.c_str());
+    String json;
+    serializeJson(msg, json);
+    client.publish(outTopic.c_str(), json.c_str());
   }
 
   delete[] readings;
   storage.clearReadings();
 }
 
+/*
+ * /growth - update the plant growth stage.
+ *
+ * Expected JSON example: { "growthStage": <1|2> }
+ *  1 = sapling, 2 = grown
+ */
 void MQTTClient::handleGrowth(JsonDocument &doc)
 {
   int32_t g = doc["growthStage"].as<int32_t>();
@@ -505,75 +540,70 @@ void MQTTClient::handleGrowth(JsonDocument &doc)
     growth = "sapling";
   else if (g == 2)
     growth = "grown";
-  else
-    growth = "seed";
+
+  Serial.printf("Growth: stage %d -> %s\n", g, growth.c_str());
 
   if (display)
   {
     display->clearImg();
     display->setGrowth(growth);
-    saveHabitat();
   }
 
-  Serial.printf("Growth stage: %d -> %s\n", g, growth.c_str());
+  if (callbacks.onGrowth)
+    callbacks.onGrowth(growth);
 }
 
-void MQTTClient::handleDelete(void)
+/*
+ * /delete - wipe configuration and return to unconfigured state.
+ *
+ * Expected JSON example: {} (any message triggers the delete)
+ */
+void MQTTClient::handleDelete()
 {
-  PersistenceManager storage;
-  storage.clear();
-  scheduler->getLightSchedule().disable();
-  scheduler->getWaterSchedule().disable();
-  initState = InitState::WAITING_FOR_ID;
+  Serial.println("Delete: clearing configuration");
+
+  if (scheduler)
+  {
+    scheduler->getLightSchedule().disable();
+    scheduler->getWaterSchedule().disable();
+  }
+
+  if (callbacks.onDelete)
+    callbacks.onDelete();
+
+  initState = InitState::UNCONFIGURED;
+  client.unsubscribe(("microgrow/" + deviceId + "/override").c_str());
+  client.unsubscribe(("microgrow/" + deviceId + "/refresh").c_str());
+  client.unsubscribe(("microgrow/" + deviceId + "/growth").c_str());
+  client.unsubscribe(("microgrow/" + deviceId + "/delete").c_str());
+  client.unsubscribe(("microgrow/" + deviceId + "/blackout").c_str());
   subscribeToInitTopics();
 }
 
+/*
+ * /blackout - enable or disable the light blackout mode.
+ *
+ * Expected JSON example: { "blackout": <bool> }
+ */
 void MQTTClient::handleBlackout(JsonDocument &doc)
 {
-  if (doc["blackout"].is<int>())
+  if (!doc["blackout"].is<bool>() && !doc["blackout"].is<int>())
   {
-    blackout = false;
-    scheduler->getLightSchedule().resume();
-    PersistenceManager storage;
-    storage.setBlackout(blackout);
-  }
-}
-
-void MQTTClient::saveHabitat()
-{
-  PersistenceManager storage;
-  storage.saveHabitatInfo(greenType, growth);
-}
-
-void MQTTClient::saveConfiguration()
-{
-  PersistenceManager storage;
-
-  DeviceConfig config;
-  config.greenType = greenType;
-  config.growth = growth;
-
-  if (automation)
-  {
-    config.targetTemp = automation->getTargets().temperature;
-    config.targetHumidity = automation->getTargets().humidity;
+    Serial.println("Blackout: missing 'blackout' field");
+    return;
   }
 
-  // Get schedule timings from scheduler
+  blackout = doc["blackout"].as<bool>();
+  Serial.printf("Blackout: %s\n", blackout ? "ON" : "OFF");
+
   if (scheduler)
   {
-    auto &light = scheduler->getLightSchedule().getTiming();
-    auto &water = scheduler->getWaterSchedule().getTiming();
-
-    config.lightStartSec = light.startSec;
-    config.lightDurationSec = light.durationSec;
-    config.lightIntervalSec = light.intervalSec;
-
-    config.waterStartSec = water.startSec;
-    config.waterDurationSec = water.durationSec;
-    config.waterIntervalSec = water.intervalSec;
+    if (blackout)
+      scheduler->getLightSchedule().pause();
+    else
+      scheduler->getLightSchedule().resume();
   }
 
-  config.blackout = blackout;
-  storage.saveConfig(config);
+  if (callbacks.onBlackout)
+    callbacks.onBlackout(blackout);
 }
