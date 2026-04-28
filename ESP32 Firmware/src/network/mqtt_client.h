@@ -120,5 +120,4 @@ private:
 
     // Static callback wrapper for PubSubClient
     static void staticCallback(char *topic, byte *payload, unsigned int length);
-    static MQTTClient *instance;
 };
