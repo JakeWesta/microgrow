@@ -1,11 +1,11 @@
 #include "mqtt_client.h"
 
-MQTTClient *MQTTClient::instance = nullptr;
+static MQTTClient *s_instance = nullptr;
 
 MQTTClient &MQTTClient::getInstance(const String &deviceId)
 {
   static MQTTClient singleton(deviceId);
-  instance = &singleton;
+  s_instance = &singleton;
   return singleton;
 }
 
@@ -15,7 +15,6 @@ MQTTClient::MQTTClient(const String &deviceId)
       lastPublish(0), actuators(nullptr), scheduler(nullptr),
       automation(nullptr), display(nullptr)
 {
-  instance = this;
 }
 
 bool MQTTClient::begin(bool alreadyConfigured, const String &gt, const String &gr)
@@ -147,8 +146,8 @@ bool MQTTClient::publishPulse(const String &message)
 
 void MQTTClient::staticCallback(char *topic, byte *payload, unsigned int length)
 {
-  if (instance)
-    instance->messageCallback(topic, payload, length);
+  if (s_instance)
+    s_instance->messageCallback(topic, payload, length);
 }
 
 void MQTTClient::messageCallback(char *topic, byte *payload, unsigned int length)

@@ -296,7 +296,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
     const int imgY = DIVIDER_Y + 2;
     const int plantH = TFT_HEIGHT - imgY;
     const int cx = TFT_WIDTH / 2;
-    const int baseY = imgY + plantH - 80;
+    const int baseY = TFT_HEIGHT - 5;
 
     // Redraw plant area on first render or whenever growth stage changes
     bool growthChanged = (growth != lastGrowth);
@@ -305,7 +305,7 @@ void DisplayManager::showSensorData(float temp, float humidity, bool waterLow)
         tft.fillRect(0, imgY, TFT_WIDTH, plantH, COLOR_BG);
         if (growth.length() > 0)
         {
-            // drawPlant(cx, baseY);
+            drawPlant(cx, baseY);
             lastGrowth = growth;
         }
     }
