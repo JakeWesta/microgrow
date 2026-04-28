@@ -357,7 +357,7 @@ void sensorTask(void *param)
         {
             SensorReadings readings = sensors->read();
 
-            if (display /*&& readings.valid*/)
+            if (display && readings.valid)
                 display->showSensorData(
                     readings.temperature,
                     readings.humidity,
